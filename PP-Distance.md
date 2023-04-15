@@ -1,0 +1,1966 @@
+---
+title: "Point Pattern Analysis - distance of Enteric Fever and Leptospirosis in Kelantan"
+author: "Hazlienor"
+date: "2023-04-12"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+
+
+
+## Load library
+
+
+```r
+library(sf)
+```
+
+```
+## Linking to GEOS 3.9.3, GDAL 3.5.2, PROJ 8.2.1; sf_use_s2() is TRUE
+```
+
+```r
+library(tidyverse)
+```
+
+```
+## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+## ✔ dplyr     1.1.1     ✔ readr     2.1.4
+## ✔ forcats   1.0.0     ✔ stringr   1.5.0
+## ✔ ggplot2   3.4.1     ✔ tibble    3.2.1
+## ✔ lubridate 1.9.2     ✔ tidyr     1.3.0
+## ✔ purrr     1.0.1
+```
+
+```
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()
+## ℹ Use the ]8;;http://conflicted.r-lib.org/conflicted package]8;; to force all conflicts to become errors
+```
+
+```r
+library(here)
+```
+
+```
+## here() starts at C:/Users/MY PC/OneDrive - Universiti Sains Malaysia/R MPH Spatial Analysis/spatialMPH
+```
+
+```r
+library(janitor)
+```
+
+```
+## 
+## Attaching package: 'janitor'
+## 
+## The following objects are masked from 'package:stats':
+## 
+##     chisq.test, fisher.test
+```
+
+```r
+library(gtsummary)
+library(DT)
+library(stringr)
+library(readxl)
+library(broom)
+library(tmap)
+library(mapview)
+library(lubridate)
+library(maptools)
+```
+
+```
+## Loading required package: sp
+## Checking rgeos availability: TRUE
+## Please note that 'maptools' will be retired during 2023,
+## plan transition at your earliest convenience;
+## some functionality will be moved to 'sp'.
+```
+
+```r
+library(spatstat)
+```
+
+```
+## Loading required package: spatstat.data
+## Loading required package: spatstat.geom
+## spatstat.geom 3.1-0
+## Loading required package: spatstat.random
+## spatstat.random 3.1-4
+## Loading required package: spatstat.explore
+## Loading required package: nlme
+## 
+## Attaching package: 'nlme'
+## 
+## The following object is masked from 'package:dplyr':
+## 
+##     collapse
+## 
+## spatstat.explore 3.1-0
+## Loading required package: spatstat.model
+## Loading required package: rpart
+## spatstat.model 3.2-1
+## Loading required package: spatstat.linnet
+## spatstat.linnet 3.0-6
+## 
+## spatstat 3.0-3 
+## For an introduction to spatstat, type 'beginner'
+```
+
+```r
+library(spdep)
+```
+
+```
+## Loading required package: spData
+## To access larger datasets in this package, install the spDataLarge
+## package with: `install.packages('spDataLarge',
+## repos='https://nowosad.github.io/drat/', type='source')`
+```
+
+```r
+library(gridExtra)
+```
+
+```
+## 
+## Attaching package: 'gridExtra'
+## 
+## The following object is masked from 'package:dplyr':
+## 
+##     combine
+```
+
+```r
+library(grid)
+```
+
+```
+## 
+## Attaching package: 'grid'
+## 
+## The following object is masked from 'package:spatstat.geom':
+## 
+##     as.mask
+```
+
+```r
+library(sparr)
+```
+
+```
+## 
+## 
+## Welcome to
+##    _____ ___  ____  ____  ____         
+##   / ___// _ \/ _  \/ __ \/ __ \        
+##   \__ \/ ___/ __  /  ___/  ___/        
+##  ___/ / /  / / / / /\ \/ /\ \          
+## /____/_/  /_/ /_/_/  \__/  \_\   v2.3-10
+## 
+## - type news(package="sparr") for an overview
+## - type help("sparr") for documentation
+## - type citation("sparr") for how to cite
+```
+
+```r
+library(spatialEco)
+```
+
+```
+## 
+## Attaching package: 'spatialEco'
+## 
+## The following object is masked from 'package:grid':
+## 
+##     explode
+## 
+## The following object is masked from 'package:gridExtra':
+## 
+##     combine
+## 
+## The following objects are masked from 'package:spatstat.geom':
+## 
+##     is.empty, quadrats, shift
+## 
+## The following object is masked from 'package:spatstat.data':
+## 
+##     ants
+## 
+## The following object is masked from 'package:dplyr':
+## 
+##     combine
+```
+
+
+## Prepare data
+
+read polygon data
+
+
+```r
+kel <- st_read(here("Map",
+                    "kelantan.shp"))
+```
+
+```
+## Reading layer `kelantan' from data source 
+##   `C:\Users\MY PC\OneDrive - Universiti Sains Malaysia\R MPH Spatial Analysis\spatialMPH\Map\kelantan.shp' 
+##   using driver `ESRI Shapefile'
+## Simple feature collection with 66 features and 6 fields
+## Geometry type: POLYGON
+## Dimension:     XY
+## Bounding box:  xmin: 371629.6 ymin: 503028.2 xmax: 519479.6 ymax: 690232.8
+## Projected CRS: Kertau (RSO) / RSO Malaya (m)
+```
+
+
+read population data per mukim per year
+
+
+```r
+kel_mukim <- read_xlsx(here ("mukim.xlsx"))
+```
+
+
+merge population data to polygon
+
+
+```r
+kel_map <- merge(kel,kel_mukim,by.x="MUKIM", by.y="MUKIM", all.x=T, sort=F)
+dim(kel_map)
+```
+
+```
+## [1] 66 49
+```
+
+```r
+class(kel_map)
+```
+
+```
+## [1] "sf"         "data.frame"
+```
+
+```r
+st_crs(kel_map)
+```
+
+```
+## Coordinate Reference System:
+##   User input: Kertau (RSO) / RSO Malaya (m) 
+##   wkt:
+## PROJCRS["Kertau (RSO) / RSO Malaya (m)",
+##     BASEGEOGCRS["Kertau (RSO)",
+##         DATUM["Kertau (RSO)",
+##             ELLIPSOID["Everest 1830 (RSO 1969)",6377295.664,300.8017,
+##                 LENGTHUNIT["metre",1]]],
+##         PRIMEM["Greenwich",0,
+##             ANGLEUNIT["degree",0.0174532925199433]],
+##         ID["EPSG",4751]],
+##     CONVERSION["Rectified Skew Orthomorphic Malaya Grid (metres)",
+##         METHOD["Hotine Oblique Mercator (variant A)",
+##             ID["EPSG",9812]],
+##         PARAMETER["Latitude of projection centre",4,
+##             ANGLEUNIT["degree",0.0174532925199433],
+##             ID["EPSG",8811]],
+##         PARAMETER["Longitude of projection centre",102.25,
+##             ANGLEUNIT["degree",0.0174532925199433],
+##             ID["EPSG",8812]],
+##         PARAMETER["Azimuth of initial line",323.0257905,
+##             ANGLEUNIT["degree",0.0174532925199433],
+##             ID["EPSG",8813]],
+##         PARAMETER["Angle from Rectified to Skew Grid",323.130102361111,
+##             ANGLEUNIT["degree",0.0174532925199433],
+##             ID["EPSG",8814]],
+##         PARAMETER["Scale factor on initial line",0.99984,
+##             SCALEUNIT["unity",1],
+##             ID["EPSG",8815]],
+##         PARAMETER["False easting",804670.24,
+##             LENGTHUNIT["metre",1],
+##             ID["EPSG",8806]],
+##         PARAMETER["False northing",0,
+##             LENGTHUNIT["metre",1],
+##             ID["EPSG",8807]]],
+##     CS[Cartesian,2],
+##         AXIS["(E)",east,
+##             ORDER[1],
+##             LENGTHUNIT["metre",1]],
+##         AXIS["(N)",north,
+##             ORDER[2],
+##             LENGTHUNIT["metre",1]],
+##     USAGE[
+##         SCOPE["Engineering survey, topographic mapping."],
+##         AREA["Malaysia - West Malaysia onshore."],
+##         BBOX[1.21,99.59,6.72,104.6]],
+##     ID["EPSG",3168]]
+```
+
+load disease data in xlxs
+
+
+```r
+linelist <- read_xlsx(here ("linelist.xlsx")) %>% clean_names()
+glimpse(linelist)
+```
+
+```
+## Rows: 1,318
+## Columns: 26
+## $ diagnosis                                  <chr> "Leptospirosis", "Leptospir…
+## $ notifikasi_no                              <dbl> 2685725, 2728504, 2739963, …
+## $ tahun_daftar                               <dbl> 2016, 2016, 2016, 2016, 201…
+## $ epid_daftar                                <dbl> 6, 9, 11, 12, 18, 18, 19, 1…
+## $ age                                        <dbl> 30, 23, 39, 43, 31, 34, 48,…
+## $ alamat_semasa_kejadian                     <chr> "FELDA ARING", "LADANG U&I …
+## $ poskod                                     <dbl> 18300, 18300, 18300, 18300,…
+## $ latitude_rso                               <dbl> 478031, 459494, 441802, 488…
+## $ longitude_rso                              <dbl> 548141, 564966, 547551, 547…
+## $ latitude_wgs                               <dbl> 4.944824, 5.034372, 4.89743…
+## $ longitude_wgs                              <dbl> 102.3491, 102.1477, 101.960…
+## $ notifikasi_status                          <chr> "Daftar Kes", "Daftar Kes",…
+## $ race                                       <chr> "Foreigner", "Foreigner", "…
+## $ kewarganegaraan                            <chr> "Bukan Warganegara", "Bukan…
+## $ gender                                     <chr> "Male", "Male", "Male", "Ma…
+## $ nationality                                <chr> "INDONESIA", "INDONESIA", "…
+## $ klasifikasi_kes                            <chr> "Sporadic", "Sporadic", "Sp…
+## $ cara_pengesanan_kes                        <chr> "Pasif", "Pasif", "Pasif", …
+## $ jenis_rawatan                              <chr> "Wad Perubatan", "Jabatan K…
+## $ daerah                                     <chr> "GUA MUSANG", "GUA MUSANG",…
+## $ mukim                                      <chr> "CHIKU", "CHIKU", "GALAS", …
+## $ lokaliti                                   <chr> NA, "LADANG U & I, CIKU", "…
+## $ diagnosis2                                 <chr> "LEPTOSPIROSIS", "LEPTOSPIR…
+## $ sub_diagnosis                              <chr> NA, NA, NA, NA, NA, NA, NA,…
+## $ negeri                                     <chr> "KELANTAN", "KELANTAN", "KE…
+## $ jenis_import_jangkitan_dalam_negara_negeri <chr> NA, NA, NA, NA, NA, NA, NA,…
+```
+
+
+remove na coordinate
+
+
+```r
+#disease data all - list all is all leptospirosis and enteric fever cases
+listALL <- linelist %>% 
+  filter(!is.na(latitude_wgs),
+         !is.na(longitude_wgs))
+```
+
+
+convert all disease data to spatial data
+
+
+```r
+loc_ALL <- st_as_sf(listALL, 
+                    coords = c("longitude_wgs", "latitude_wgs"), 
+                    crs = 4326)
+```
+
+
+convert CRS to RSO
+
+
+```r
+loc_ALL2 <- st_transform(loc_ALL, 3168)
+```
+
+
+
+## Point Pattern Analysis
+
+# Transform data
+
+convert data to spatial format
+
+
+```r
+kel_map.sp <- as(kel_map, "Spatial")
+class(kel_map.sp)
+```
+
+```
+## [1] "SpatialPolygonsDataFrame"
+## attr(,"package")
+## [1] "sp"
+```
+
+
+```r
+plot(kel_map.sp)
+```
+
+![](PP-Distance_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
+
+convert point to spatial
+
+
+```r
+loc_ALL2.sp <- as(loc_ALL2, "Spatial")
+class(loc_ALL2.sp)
+```
+
+```
+## [1] "SpatialPointsDataFrame"
+## attr(,"package")
+## [1] "sp"
+```
+
+select point only in Kelantan
+
+
+```r
+all_kel <- loc_ALL2 %>% 
+  mutate(within_kel_map = lengths(st_within(loc_ALL2, kel_map)))
+all_kel2 <- all_kel %>% 
+  filter(within_kel_map == 1)
+```
+
+
+split data by diagnosis
+
+
+```r
+Enteric_kel <- all_kel2 %>% 
+  filter(diagnosis == "Enteric_fever") 
+lepto_kel <- all_kel2 %>% 
+  filter(diagnosis == "Leptospirosis") 
+```
+
+
+convert enteric fever and lepto pint data to spatial to ppp
+
+
+```r
+Enteric_kel.sp <- as(Enteric_kel, "Spatial")
+Enteric_kel.ppp <- as(Enteric_kel.sp, 'ppp')
+lepto_kel.sp <- as(lepto_kel, "Spatial")
+lepto_kel.ppp <- as(lepto_kel.sp, 'ppp')
+```
+
+
+# Enteric fever data by year
+
+extract enteric fever by year
+
+
+```r
+loc_ent16 <- subset(Enteric_kel, tahun_daftar=="2016")
+loc_ent17 <- subset(Enteric_kel, tahun_daftar=="2017")
+loc_ent18 <- subset(Enteric_kel, tahun_daftar=="2018")
+loc_ent19 <- subset(Enteric_kel, tahun_daftar=="2019")
+loc_ent20 <- subset(Enteric_kel, tahun_daftar=="2020")
+loc_ent21 <- subset(Enteric_kel, tahun_daftar=="2021")
+loc_ent22 <- subset(Enteric_kel, tahun_daftar=="2022")
+```
+
+
+convert point to spatial
+
+
+```r
+loc_ent16.sp <- as(loc_ent16, "Spatial")
+loc_ent17.sp <- as(loc_ent17, "Spatial")
+loc_ent18.sp <- as(loc_ent18, "Spatial")
+loc_ent19.sp <- as(loc_ent19, "Spatial")
+loc_ent20.sp <- as(loc_ent20, "Spatial")
+loc_ent21.sp <- as(loc_ent21, "Spatial")
+loc_ent22.sp <- as(loc_ent22, "Spatial")
+```
+
+
+convert point spatial data to ppp format
+
+
+```r
+loc_ALL2.ppp <- as(loc_ALL2.sp, 'ppp')
+class(loc_ALL2.ppp)
+```
+
+```
+## [1] "ppp"
+```
+
+```r
+loc_ent16.ppp <- as(loc_ent16.sp, 'ppp')
+loc_ent17.ppp <- as(loc_ent17.sp, 'ppp')
+loc_ent18.ppp <- as(loc_ent18.sp, 'ppp')
+loc_ent19.ppp <- as(loc_ent19.sp, 'ppp')
+loc_ent20.ppp <- as(loc_ent20.sp, 'ppp')
+loc_ent21.ppp <- as(loc_ent21.sp, 'ppp')
+loc_ent22.ppp <- as(loc_ent22.sp, 'ppp')
+```
+
+transform to owin format
+
+
+```r
+kel_map.owin <- as(kel_map.sp, "owin")
+class(kel_map.owin)
+```
+
+```
+## [1] "owin"
+```
+
+
+plot ppp object with window 
+
+
+```r
+# plot ALL
+plot(kel_map.owin)
+points(loc_ALL2.ppp)
+```
+
+![](PP-Distance_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+
+
+Remove marks
+
+
+```r
+# remove marks enteric fever 2016-2022
+Enteric_kel.ppp2 <- Enteric_kel.ppp
+marks(Enteric_kel.ppp2) <- NULL
+
+# remove marks (year)
+loc_ent16.ppp2 <- loc_ent16.ppp
+marks(loc_ent16.ppp2) <- NULL
+loc_ent17.ppp2 <- loc_ent17.ppp
+marks(loc_ent17.ppp2) <- NULL
+loc_ent18.ppp2 <- loc_ent18.ppp
+marks(loc_ent18.ppp2) <- NULL
+loc_ent19.ppp2 <- loc_ent19.ppp
+marks(loc_ent19.ppp2) <- NULL
+loc_ent20.ppp2 <- loc_ent20.ppp
+marks(loc_ent20.ppp2) <- NULL
+loc_ent21.ppp2 <- loc_ent21.ppp
+marks(loc_ent21.ppp2) <- NULL
+loc_ent22.ppp2 <- loc_ent22.ppp
+marks(loc_ent22.ppp2) <- NULL
+```
+
+
+generate window
+
+
+```r
+Window(Enteric_kel.ppp2) <- kel_map.owin
+Window(loc_ent16.ppp2) <- kel_map.owin
+Window(loc_ent17.ppp2) <- kel_map.owin
+Window(loc_ent18.ppp2) <- kel_map.owin
+Window(loc_ent19.ppp2) <- kel_map.owin
+Window(loc_ent20.ppp2) <- kel_map.owin
+Window(loc_ent21.ppp2) <- kel_map.owin
+Window(loc_ent22.ppp2) <- kel_map.owin
+```
+
+
+rescale to km
+
+
+```r
+# point
+Enteric_kel.ppp2.km <- rescale(Enteric_kel.ppp2, 1000, 'km') #cumulative
+loc_ent16.ppp2.km <- rescale(loc_ent16.ppp2, 1000, 'km') #2016
+loc_ent17.ppp2.km <- rescale(loc_ent17.ppp2, 1000, 'km') #2017
+loc_ent18.ppp2.km <- rescale(loc_ent18.ppp2, 1000, 'km') #2018
+loc_ent19.ppp2.km <- rescale(loc_ent19.ppp2, 1000, 'km') #2019
+loc_ent20.ppp2.km <- rescale(loc_ent20.ppp2, 1000, 'km') #2020
+loc_ent21.ppp2.km <- rescale(loc_ent21.ppp2, 1000, 'km') #2021
+loc_ent22.ppp2.km <- rescale(loc_ent22.ppp2, 1000, 'km') #2022
+
+# map
+kel_map.owin.km <- rescale(kel_map.owin, 1000, 'km')
+```
+
+
+# Leptospirosis data by year
+
+extract leptospirosis by year, convert to ppp
+
+
+```r
+loc_lep16 <- subset(lepto_kel, tahun_daftar=="2016")
+loc_lep17 <- subset(lepto_kel, tahun_daftar=="2017")
+loc_lep18 <- subset(lepto_kel, tahun_daftar=="2018")
+loc_lep19 <- subset(lepto_kel, tahun_daftar=="2019")
+loc_lep20 <- subset(lepto_kel, tahun_daftar=="2020")
+loc_lep21 <- subset(lepto_kel, tahun_daftar=="2021")
+loc_lep22 <- subset(lepto_kel, tahun_daftar=="2022")
+```
+
+
+convert point to spatial
+
+
+```r
+loc_lep16.sp <- as(loc_lep16, "Spatial")
+loc_lep17.sp <- as(loc_lep17, "Spatial")
+loc_lep18.sp <- as(loc_lep18, "Spatial")
+loc_lep19.sp <- as(loc_lep19, "Spatial")
+loc_lep20.sp <- as(loc_lep20, "Spatial")
+loc_lep21.sp <- as(loc_lep21, "Spatial")
+loc_lep22.sp <- as(loc_lep22, "Spatial")
+```
+
+
+convert point spatial data to ppp format
+
+
+```r
+loc_lep16.ppp <- as(loc_lep16.sp, 'ppp')
+loc_lep17.ppp <- as(loc_lep17.sp, 'ppp')
+loc_lep18.ppp <- as(loc_lep18.sp, 'ppp')
+loc_lep19.ppp <- as(loc_lep19.sp, 'ppp')
+loc_lep20.ppp <- as(loc_lep20.sp, 'ppp')
+loc_lep21.ppp <- as(loc_lep21.sp, 'ppp')
+loc_lep22.ppp <- as(loc_lep22.sp, 'ppp')
+```
+
+
+remove marks
+
+
+```r
+#remove marks leptospirosis 2016-2022
+lepto_kel.ppp2 <- lepto_kel.ppp
+marks(lepto_kel.ppp2) <- NULL
+
+#remove marks (year)
+loc_lep16.ppp2 <- loc_lep16.ppp
+marks(loc_lep16.ppp2) <- NULL
+loc_lep17.ppp2 <- loc_lep17.ppp
+marks(loc_lep17.ppp2) <- NULL
+loc_lep18.ppp2 <- loc_lep18.ppp
+marks(loc_lep18.ppp2) <- NULL
+loc_lep19.ppp2 <- loc_lep19.ppp
+marks(loc_lep19.ppp2) <- NULL
+loc_lep20.ppp2 <- loc_lep20.ppp
+marks(loc_lep20.ppp2) <- NULL
+loc_lep21.ppp2 <- loc_lep21.ppp
+marks(loc_lep21.ppp2) <- NULL
+loc_lep22.ppp2 <- loc_lep22.ppp
+marks(loc_lep22.ppp2) <- NULL
+```
+
+
+generate window
+
+
+```r
+Window(lepto_kel.ppp2) <- kel_map.owin
+Window(loc_lep16.ppp2) <- kel_map.owin
+Window(loc_lep17.ppp2) <- kel_map.owin
+Window(loc_lep18.ppp2) <- kel_map.owin
+Window(loc_lep19.ppp2) <- kel_map.owin
+Window(loc_lep20.ppp2) <- kel_map.owin
+Window(loc_lep21.ppp2) <- kel_map.owin
+Window(loc_lep22.ppp2) <- kel_map.owin
+```
+
+rescale to km
+
+
+```r
+#point
+lepto_kel.ppp2.km <- rescale(lepto_kel.ppp2, 1000, 'km') #cumulative
+loc_lep16.ppp2.km <- rescale(loc_lep16.ppp2, 1000, 'km') #2016
+loc_lep17.ppp2.km <- rescale(loc_lep17.ppp2, 1000, 'km') #2017
+loc_lep18.ppp2.km <- rescale(loc_lep18.ppp2, 1000, 'km') #2018
+loc_lep19.ppp2.km <- rescale(loc_lep19.ppp2, 1000, 'km') #2019
+loc_lep20.ppp2.km <- rescale(loc_lep20.ppp2, 1000, 'km') #2020
+loc_lep21.ppp2.km <- rescale(loc_lep21.ppp2, 1000, 'km') #2021
+loc_lep22.ppp2.km <- rescale(loc_lep22.ppp2, 1000, 'km') #2022
+
+#map
+kel_map.owin.km <- rescale(kel_map.owin, 1000, 'km') 
+```
+
+## distance-based analysis for Enteric fever
+
+# ANN for Enteric fever 2016-2022
+
+
+```r
+# extracts the intensity - average number of enteric fever per square kilometer)
+ENTIntensity <- round(summary(Enteric_kel.ppp2.km)$intensity, 3) 
+
+# calculates the average nearest neighbor distance  in km
+ENTANNkm <- round(mean(nndist(Enteric_kel.ppp2.km)), 2) 
+
+# calculates the average nearest neighbor distance  in m
+ENTANN <- round(mean(nndist(Enteric_kel.ppp2)), 2) 
+```
+
+
+Intensity by year
+
+
+```r
+ENT16_Intensity <- round(summary(loc_ent16.ppp2.km)$intensity, 3) #2016
+ENT17_Intensity <- round(summary(loc_ent17.ppp2.km)$intensity, 3) #2017
+ENT18_Intensity <- round(summary(loc_ent18.ppp2.km)$intensity, 3) #2018
+ENT19_Intensity <- round(summary(loc_ent19.ppp2.km)$intensity, 3) #2019
+ENT20_Intensity <- round(summary(loc_ent20.ppp2.km)$intensity, 3) #2020
+ENT21_Intensity <- round(summary(loc_ent21.ppp2.km)$intensity, 3) #2021
+ENT22_Intensity <- round(summary(loc_ent22.ppp2.km)$intensity, 3) #2022
+```
+
+
+average ANN in meter by year
+
+
+```r
+ENTANN16 <- round(mean(nndist(loc_ent16.ppp2)), 2)
+ENTANN17 <- round(mean(nndist(loc_ent17.ppp2)), 2)
+ENTANN18 <- round(mean(nndist(loc_ent18.ppp2)), 2)
+ENTANN19 <- round(mean(nndist(loc_ent19.ppp2)), 2)
+ENTANN20 <- round(mean(nndist(loc_ent20.ppp2)), 2)
+ENTANN21 <- round(mean(nndist(loc_ent21.ppp2)), 2)
+ENTANN22 <- round(mean(nndist(loc_ent22.ppp2)), 2)
+```
+
+
+interpret spatial intensity
+
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2016-2022 is ", ENTIntensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2016-2022 is 0.014 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2016 is ", ENT16_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2016 is 0.004 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2017 is ", ENT17_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2017 is 0.003 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2018 is ", ENT18_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2018 is 0.003 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2019 is ", ENT19_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2019 is 0.001 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2020 is ", ENT20_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2020 is 0.001 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2021 is ", ENT21_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2021 is 0 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Enteric Fever cases 2022 is ", ENT22_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Enteric Fever cases 2022 is 0.003 cases per sq. km."
+```
+
+
+
+Calculate nearest neigbour index (NNI) for enteric fever
+NNI < 1 clustered, >1 dispersed
+
+```r
+#interpret ANN
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016-2022 is ", ENTANN, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016-2022 is 1643.29 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016 is ", ENTANN16, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016 is 3835.69 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016 is ", ENTANN17, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016 is 4503.12 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016 is ", ENTANN18, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016 is 3864.86 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016 is ", ENTANN19, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016 is 7236.52 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016 is ", ENTANN20, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016 is 13351.71 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016 is ", ENTANN21, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016 is 14253.05 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Enteric Fever cases 2016 is ", ENTANN22, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Enteric Fever cases 2016 is 3565.69 m."
+```
+
+
+```r
+nniENT <- nni(Enteric_kel)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniENT16 <- nni(loc_ent16)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniENT17 <-nni(loc_ent17)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniENT18 <- nni(loc_ent18)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniENT19 <-nni(loc_ent19)
+nniENT20 <-nni(loc_ent20)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniENT21 <-nni(loc_ent21)
+nniENT22 <-nni(loc_ent22)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+NNI_ENT <- bind_rows(
+  data.frame(Dataset = "2016-2022", nniENT),
+  data.frame(Dataset = "2016", nniENT16),
+  data.frame(Dataset = "2017", nniENT17),
+  data.frame(Dataset = "2018", nniENT18),
+  data.frame(Dataset = "2019", nniENT19),
+  data.frame(Dataset = "2020", nniENT20),
+  data.frame(Dataset = "2021", nniENT21),
+  data.frame(Dataset = "2022", nniENT22)
+)
+NNI_ENT
+```
+
+```
+##     Dataset       NNI    z.score            p expected.mean.distance
+## 1 2016-2022 0.5589368 -12.285691 1.081170e-34               2940.020
+## 2      2016 0.9250764  -1.091599 2.750093e-01               4146.347
+## 3      2017 0.8916706  -1.277524 2.014174e-01               5050.203
+## 4      2018 0.7438140  -3.287702 1.010086e-03               5196.001
+## 5      2019 1.2427335   1.737500 8.229904e-02               5823.063
+## 6      2020 1.9445027   6.514870 7.275245e-11               6866.389
+## 7      2021 2.6203292   6.931371 4.167812e-12               5439.413
+## 8      2022 0.7972390  -2.422410 1.541795e-02               4472.549
+##   observed.mean.distance
+## 1               1643.285
+## 2               3835.688
+## 3               4503.117
+## 4               3864.859
+## 5               7236.516
+## 6              13351.713
+## 7              14253.052
+## 8               3565.690
+```
+
+
+clark evans test for Enteric Fever
+-R less than 1 indicates spatial clustering. The smaller the value of R, the greater the degree of clustering.
+
+
+```r
+CE_ent <- clarkevans.test(Enteric_kel.ppp2)
+CE_ent16 <- clarkevans.test(loc_ent16.ppp2)
+CE_ent17 <- clarkevans.test(loc_ent17.ppp2)
+CE_ent18 <- clarkevans.test(loc_ent18.ppp2)
+CE_ent19 <- clarkevans.test(loc_ent19.ppp2)
+CE_ent20 <- clarkevans.test(loc_ent20.ppp2)
+CE_ent21 <- clarkevans.test(loc_ent21.ppp2)
+CE_ent22 <- clarkevans.test(loc_ent22.ppp2)
+
+# dataframe
+CE_ent.df <- data.frame(Dataset = "Enteric_kel.ppp2",
+                       TestStatistic = CE_ent$statistic,
+                       PValue = CE_ent$p.value)
+CE_ent16.df <- data.frame(Dataset = "loc_ent16.ppp2",
+                       TestStatistic = CE_ent16$statistic,
+                       PValue = CE_ent16$p.value)
+CE_ent17.df <- data.frame(Dataset = "loc_ent17.ppp2",
+                       TestStatistic = CE_ent17$statistic,
+                       PValue = CE_ent17$p.value)
+CE_ent18.df <- data.frame(Dataset = "loc_ent18.ppp2",
+                       TestStatistic = CE_ent18$statistic,
+                       PValue = CE_ent18$p.value)
+CE_ent19.df <- data.frame(Dataset = "loc_ent19.ppp2",
+                       TestStatistic = CE_ent19$statistic,
+                       PValue = CE_ent19$p.value)
+CE_ent20.df <- data.frame(Dataset = "loc_ent20.ppp2",
+                       TestStatistic = CE_ent20$statistic,
+                       PValue = CE_ent20$p.value)
+CE_ent21.df <- data.frame(Dataset = "loc_ent21.ppp2",
+                       TestStatistic = CE_ent21$statistic,
+                       PValue = CE_ent21$p.value)
+CE_ent22.df <- data.frame(Dataset = "loc_ent22.ppp2",
+                       TestStatistic = CE_ent22$statistic,
+                       PValue = CE_ent22$p.value)
+
+#combine rows
+CE_ENT <- bind_rows(
+  data.frame(Dataset = "2016-2022", CE_ent.df),
+  data.frame(Dataset = "2016", CE_ent16.df),
+  data.frame(Dataset = "2017", CE_ent17.df),
+  data.frame(Dataset = "2018", CE_ent18.df),
+  data.frame(Dataset = "2019", CE_ent19.df),
+  data.frame(Dataset = "2020", CE_ent20.df),
+  data.frame(Dataset = "2021", CE_ent21.df),
+  data.frame(Dataset = "2022", CE_ent22.df)
+)
+CE_ENT
+```
+
+```
+##         Dataset        Dataset.1 TestStatistic       PValue
+## R...1 2016-2022 Enteric_kel.ppp2     0.3891718 0.000000e+00
+## R...2      2016   loc_ent16.ppp2     0.4751358 2.065015e-14
+## R...3      2017   loc_ent17.ppp2     0.4515081 9.911094e-11
+## R...4      2018   loc_ent18.ppp2     0.4216969 1.159073e-13
+## R...5      2019   loc_ent19.ppp2     0.4404068 6.186737e-05
+## R...6      2020   loc_ent20.ppp2     0.7830134 1.344730e-01
+## R...7      2021   loc_ent21.ppp2     0.5183861 3.937814e-02
+## R...8      2022   loc_ent22.ppp2     0.3621900 2.531308e-14
+```
+
+
+mean centre and standard distance for Enteric fever
+
+
+```r
+#calculate mean center (m) for enteric fever
+entxy <- coords(Enteric_kel.ppp2)
+mcent <- summarize(entxy, xmean = mean(x), ymean = mean(y))
+mcent
+```
+
+```
+##      xmean    ymean
+## 1 469546.2 655158.8
+```
+
+```r
+#calculate standard distance (m) for enteric fever
+sdent <- sqrt(sum((entxy[,1] - mcent[1])^2 + (entxy[,2] - mcent[2])^2) / nrow(entxy))
+sdent
+```
+
+```
+## [1] 6973.893
+```
+
+
+Median Absolute Deviation test with 99 simulations of Complete Spatial Randomness (CSR) for K function - enteric fever
+
+
+```r
+ENTMADTest <- mad.test(Enteric_kel.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE) #
+```
+
+
+
+```r
+#clustering for Enteric fever - hypthesis testing
+if(ENTMADTest$p.value < 0.05){ # if the MAD test has a p value less than 0.05, this prints a statement indicating statistical significance
+  print(paste0("These Enteric Fever cases in 2016-2022 are significantly more clustered than expected by Complete Spatial Randomness (CSR) - Median absolute deviation p value = ", round(ENTMADTest$p.value, 3), "."))
+} else { # if the p value is greater than or equal to 0.05, this prints a statement indicating non-significance
+  print(paste0("These Enteric Fever cases are not significantly more clustered than expected by Complete Spatial Randomness (CSR) - Median absolute deviation p value = ", round(sightMADTest$p.value, 3), "."))
+}
+```
+
+```
+## [1] "These Enteric Fever cases in 2016-2022 are significantly more clustered than expected by Complete Spatial Randomness (CSR) - Median absolute deviation p value = 0.01."
+```
+
+
+```r
+ENTMADTest16 <- mad.test(loc_ent16.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+ENTMADTest17 <- mad.test(loc_ent17.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+ENTMADTest18 <- mad.test(loc_ent18.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+ENTMADTest19 <- mad.test(loc_ent19.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+ENTMADTest20 <- mad.test(loc_ent20.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+ENTMADTest21 <- mad.test(loc_ent21.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+```
+## Warning: In 3 out of 99 simulations, the simulated function values were
+## infinite, NA or NaN at every distance r. Check whether some simulated patterns
+## are empty
+```
+
+```
+## Warning in envelopeTest(X, ..., exponent = Inf, alternative = alternative, :
+## Some simulated deviations were Inf, NA or NaN
+```
+
+```
+## Warning in FUN(newX[, i], ...): no non-missing arguments to max; returning -Inf
+
+## Warning in FUN(newX[, i], ...): no non-missing arguments to max; returning -Inf
+
+## Warning in FUN(newX[, i], ...): no non-missing arguments to max; returning -Inf
+```
+
+```r
+ENTMADTest22 <- mad.test(loc_ent22.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+result MAD test Enteric Fever for K function
+
+
+```r
+MAD_ent.df <- data.frame(Dataset = "Enteric_kel.ppp2",
+                       TestStatistic = ENTMADTest$statistic,
+                       PValue = ENTMADTest16$p.value)
+MAD_ent16.df <- data.frame(Dataset = "loc_ent16.ppp2",
+                       TestStatistic = ENTMADTest16$statistic,
+                       PValue = ENTMADTest16$p.value)
+MAD_ent17.df <- data.frame(Dataset = "loc_ent17.ppp2",
+                       TestStatistic = ENTMADTest17$statistic,
+                       PValue = ENTMADTest17$p.value)
+MAD_ent18.df <- data.frame(Dataset = "loc_ent18.ppp2",
+                       TestStatistic = ENTMADTest18$statistic,
+                       PValue = ENTMADTest18$p.value)
+MAD_ent19.df <- data.frame(Dataset = "loc_ent19.ppp2",
+                       TestStatistic = ENTMADTest19$statistic,
+                       PValue = ENTMADTest19$p.value)
+MAD_ent20.df <- data.frame(Dataset = "loc_ent20.ppp2",
+                       TestStatistic = ENTMADTest20$statistic,
+                       PValue = ENTMADTest20$p.value)
+MAD_ent21.df <- data.frame(Dataset = "loc_ent21.ppp2",
+                       TestStatistic = ENTMADTest21$statistic,
+                       PValue = ENTMADTest21$p.value)
+MAD_ent22.df <- data.frame(Dataset = "loc_ent22.ppp2",
+                       TestStatistic = ENTMADTest22$statistic,
+                       PValue = ENTMADTest22$p.value)
+
+#combine rows
+MAD_ENT <- bind_rows(
+  data.frame(Dataset = "2016-2022", MAD_ent.df),
+  data.frame(Dataset = "2016", MAD_ent16.df),
+  data.frame(Dataset = "2017", MAD_ent17.df),
+  data.frame(Dataset = "2018", MAD_ent18.df),
+  data.frame(Dataset = "2019", MAD_ent19.df),
+  data.frame(Dataset = "2020", MAD_ent20.df),
+  data.frame(Dataset = "2021", MAD_ent21.df),
+  data.frame(Dataset = "2022", MAD_ent22.df)
+)
+MAD_ENT
+```
+
+```
+##           Dataset        Dataset.1 TestStatistic.mad TestStatistic.rank PValue
+## mad...1 2016-2022 Enteric_kel.ppp2         13685.208                  1   0.01
+## mad...2      2016   loc_ent16.ppp2         14970.043                  1   0.01
+## mad...3      2017   loc_ent17.ppp2         12407.757                  1   0.01
+## mad...4      2018   loc_ent18.ppp2         14550.435                  1   0.01
+## mad...5      2019   loc_ent19.ppp2         12249.515                  1   0.01
+## mad...6      2020   loc_ent20.ppp2         13184.922                  1   0.01
+## mad...7      2021   loc_ent21.ppp2          8993.428                  7   0.07
+## mad...8      2022   loc_ent22.ppp2          9979.562                  1   0.01
+```
+
+K function enteric fever
+
+
+```r
+Kest_ent <- Kest(Enteric_kel.ppp2.km)
+Kest_ent16 <- Kest(loc_ent16.ppp2.km)
+Kest_ent17 <- Kest(loc_ent17.ppp2.km)
+Kest_ent18 <- Kest(loc_ent18.ppp2.km)
+Kest_ent19 <- Kest(loc_ent19.ppp2.km)
+Kest_ent20 <- Kest(loc_ent20.ppp2.km)
+Kest_ent21 <- Kest(loc_ent21.ppp2.km)
+Kest_ent22 <- Kest(loc_ent22.ppp2.km)
+```
+
+
+Plot K test
+- Empirical values greater than theoretical values suggest clustering.
+- plotting envelope takes time, significance already tested using MAD test + MC permutation
+
+
+```r
+par( mfrow= c(2,4) )
+plot(Kest_ent16, main = "2016", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Kest_ent17, main = "2017", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Kest_ent18, main = "2018", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Kest_ent19, main = "2019", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Kest_ent20, main = "2020", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Kest_ent21, main = "2021", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Kest_ent22, main = "2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Kest_ent, main = "2016-2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk21-1.png)<!-- -->
+
+G function enteric fever
+- empirical function is greater than the theoretical (blue) suggest clustered pattern
+
+
+```r
+gestENT <- Gest(Enteric_kel.ppp2.km)
+gestENT16 <- Gest(loc_ent16.ppp2.km)
+gestENT17 <- Gest(loc_ent17.ppp2.km)
+gestENT18 <- Gest(loc_ent18.ppp2.km)
+gestENT19 <- Gest(loc_ent19.ppp2.km)
+gestENT20 <- Gest(loc_ent20.ppp2.km)
+gestENT21 <- Gest(loc_ent21.ppp2.km)
+gestENT22 <- Gest(loc_ent22.ppp2.km)
+```
+
+```
+## Warning in min(x): no non-missing arguments to min; returning Inf
+```
+
+```
+## Warning in max(x): no non-missing arguments to max; returning -Inf
+```
+
+
+```r
+par( mfrow= c(2,4) )
+plot(gestENT16, main = "2016", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(gestENT17, main = "2017", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(gestENT18, main = "2018", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(gestENT19, main = "2019", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(gestENT20, main = "2020", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(gestENT21, main = "2021", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+```
+
+```
+## Warning in min(x): no non-missing arguments to min; returning Inf
+```
+
+```
+## Warning in max(x): no non-missing arguments to max; returning -Inf
+```
+
+```r
+plot(gestENT22, main = "2022", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(gestENT, main = "2016-2022", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk22-1.png)<!-- -->
+
+
+enveloped G function enteric fever 2016-2022
+
+
+```r
+# G function enteric fever per year
+par( mfrow= c(2,4) )
+GestENT16 <- plot(envelope(loc_ent16.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2016",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestENT17 <- plot(envelope(loc_ent17.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2017",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2017", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestENT18 <- plot(envelope(loc_ent18.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2018",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2018", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestENT19 <- plot(envelope(loc_ent19.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2019",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2019", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestENT20 <- plot(envelope(loc_ent20.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2020",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2020", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestENT21 <- plot(envelope(loc_ent21.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2021",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2021", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestENT22 <- plot(envelope(loc_ent22.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2022",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2022", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestENT <- plot(envelope(Enteric_kel.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2016-2022",xlab = "Distance (KM)", ylab = "Proportion of Enteric Fever Cases 2016-2022", cex.main = 2, cex.axis = 1, cex.lab = 1)
+
+mtext("Enteric Fever Pattern in Kelantan 2016-2022", side = 3, line = -1, cex = 1.5, outer = TRUE)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk23a-1.png)<!-- -->
+
+
+F test for enteric fever
+- empirical  values below theoretical (blue) suggest clustering
+
+
+```r
+par( mfrow= c(2,4) )
+plot(Fest(loc_ent16.ppp2.km), main = "2016", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_ent17.ppp2.km), main = "2017", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_ent18.ppp2.km), main = "2018", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_ent19.ppp2.km), main = "2019", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_ent20.ppp2.km), main = "2020", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_ent21.ppp2.km), main = "2021", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_ent22.ppp2.km), main = "2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(Enteric_kel.ppp2.km), main = "2016-2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+
+mtext("Enteric Fever Pattern in Kelantan 2016-2022", side = 1, line = -1, cex = 1.5, outer = TRUE)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk24-1.png)<!-- -->
+
+# distance-based analysis for Leptospirosis
+
+ANN and intensity for Leptospirosis 2016-2022
+
+
+```r
+LEPIntensity <- round(summary(lepto_kel.ppp2.km)$intensity, 3) 
+LEPANNkm <- round(mean(nndist(lepto_kel.ppp2.km)), 3) 
+LEPANN <- round(mean(nndist(lepto_kel.ppp2)), 3) 
+
+#Intensity by year
+LEP16_Intensity <- round(summary(loc_lep16.ppp2.km)$intensity, 3) #2016
+LEP17_Intensity <- round(summary(loc_lep17.ppp2.km)$intensity, 3) #2017
+LEP18_Intensity <- round(summary(loc_lep18.ppp2.km)$intensity, 3) #2018
+LEP19_Intensity <- round(summary(loc_lep19.ppp2.km)$intensity, 3) #2019
+LEP20_Intensity <- round(summary(loc_lep20.ppp2.km)$intensity, 3) #2020
+LEP21_Intensity <- round(summary(loc_lep21.ppp2.km)$intensity, 3) #2021
+LEP22_Intensity <- round(summary(loc_lep22.ppp2.km)$intensity, 3) #2022
+
+#ANN in meter by year
+LEPANN16 <- round(mean(nndist(loc_lep16.ppp2)), 2)
+LEPANN17 <- round(mean(nndist(loc_lep17.ppp2)), 2)
+LEPANN18 <- round(mean(nndist(loc_lep18.ppp2)), 2)
+LEPANN19 <- round(mean(nndist(loc_lep19.ppp2)), 2)
+LEPANN20 <- round(mean(nndist(loc_lep20.ppp2)), 2)
+LEPANN21 <- round(mean(nndist(loc_lep21.ppp2)), 2)
+LEPANN22 <- round(mean(nndist(loc_lep22.ppp2)), 2)
+
+#interpret spatial intensity
+print(paste0("The average spatial intensity for Leptospirosis cases 2016-2022 is ", LEPIntensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2016-2022 is 0.073 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Leptospirosis cases 2016 is ", LEP16_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2016 is 0.024 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Leptospirosis cases 2017 is ", LEP17_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2017 is 0.01 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Leptospirosis cases 2018 is ", LEP18_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2018 is 0.012 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Leptospirosis cases 2019 is ", LEP19_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2019 is 0.006 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Leptospirosis cases 2020 is ", LEP20_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2020 is 0.003 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Leptospirosis cases 2021 is ", LEP21_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2021 is 0.003 cases per sq. km."
+```
+
+```r
+print(paste0("The average spatial intensity for Leptospirosis cases 2022 is ", LEP22_Intensity, " cases per sq. km."))
+```
+
+```
+## [1] "The average spatial intensity for Leptospirosis cases 2022 is 0.015 cases per sq. km."
+```
+
+```r
+#interpret ANN
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2016-2022 is ", LEPANN, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2016-2022 is 906.577 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2016 is ", LEPANN16, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2016 is 1793.08 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2017 is ", LEPANN17, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2017 is 3282.28 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2018 is ", LEPANN18, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2018 is 2792.46 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2019 is ", LEPANN19, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2019 is 4385.3 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2020 is ", LEPANN20, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2020 is 7358.82 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2021 is ", LEPANN21, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2021 is 6394.2 m."
+```
+
+```r
+print(paste0("The mean nearest neighbor distance for Leptospirosis cases 2022 is ", LEPANN22, " m.")) 
+```
+
+```
+## [1] "The mean nearest neighbor distance for Leptospirosis cases 2022 is 2533.81 m."
+```
+
+
+result ANN +intensity for leptospirosis
+
+
+```r
+ANN_LEPr <- bind_rows(
+  data.frame(Dataset = "2016-2022", ANN.m = LEPANN, Intensity.sq.km = LEPIntensity), 
+  data.frame(Dataset = "2016", ANN.m = LEPANN16, Intensity.sq.km = LEP16_Intensity), 
+  data.frame(Dataset = "2017", ANN.m = LEPANN17, Intensity.sq.km = LEP17_Intensity),
+  data.frame(Dataset = "2018", ANN.m = LEPANN18, Intensity.sq.km = LEP18_Intensity),
+  data.frame(Dataset = "2019", ANN.m = LEPANN19, Intensity.sq.km = LEP19_Intensity),
+  data.frame(Dataset = "2020", ANN.m = LEPANN20, Intensity.sq.km = LEP20_Intensity),
+  data.frame(Dataset = "2021", ANN.m = LEPANN21, Intensity.sq.km = LEP21_Intensity),
+  data.frame(Dataset = "2022", ANN.m = LEPANN22, Intensity.sq.km = LEP22_Intensity)
+)
+ANN_LEPr # ANN+intensity in table
+```
+
+```
+##     Dataset    ANN.m Intensity.sq.km
+## 1 2016-2022  906.577           0.073
+## 2      2016 1793.080           0.024
+## 3      2017 3282.280           0.010
+## 4      2018 2792.460           0.012
+## 5      2019 4385.300           0.006
+## 6      2020 7358.820           0.003
+## 7      2021 6394.200           0.003
+## 8      2022 2533.810           0.015
+```
+
+
+Calculate nearest neigbour index (NNI) for leptospirosis
+- NNI < 1 clustered, >1 dispersed
+
+
+```r
+nniLEP <- nni(lepto_kel)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniLEP16 <- nni(loc_lep16)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniLEP17 <- nni(loc_lep17)
+nniLEP18 <- nni(loc_lep18)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+nniLEP19 <- nni(loc_lep19)
+nniLEP20 <- nni(loc_lep20)
+nniLEP21 <- nni(loc_lep21)
+nniLEP22 <- nni(loc_lep22)
+```
+
+```
+## Warning: data contain duplicated points
+```
+
+```r
+NNI_LEP <- bind_rows(
+  data.frame(Dataset = "lepto_kel", nniLEP),
+  data.frame(Dataset = "loc_lep16", nniLEP16),
+  data.frame(Dataset = "loc_lep17", nniLEP17),
+  data.frame(Dataset = "loc_lep18", nniLEP18),
+  data.frame(Dataset = "loc_lep19", nniLEP19),
+  data.frame(Dataset = "loc_lep20", nniLEP20),
+  data.frame(Dataset = "loc_lep21", nniLEP21),
+  data.frame(Dataset = "loc_lep22", nniLEP22)
+)
+NNI_LEP
+```
+
+```
+##     Dataset       NNI     z.score             p expected.mean.distance
+## 1 lepto_kel 0.5066545 -31.3877109 2.977136e-216               1789.341
+## 2 loc_lep16 0.5974538 -14.6318827  1.758528e-48               3001.196
+## 3 loc_lep17 0.8069370  -4.6425708  3.441007e-06               4067.577
+## 4 loc_lep18 0.6811086  -8.1163418  4.804463e-16               4099.872
+## 5 loc_lep19 0.7605712  -4.5112102  6.445880e-06               5765.793
+## 6 loc_lep20 1.0425996   0.5281551  5.973917e-01               7058.142
+## 7 loc_lep21 0.9495579  -0.5948619  5.519358e-01               6733.872
+## 8 loc_lep22 0.6918232  -8.9993010  2.271594e-19               3662.505
+##   observed.mean.distance
+## 1               906.5775
+## 2              1793.0759
+## 3              3282.2780
+## 4              2792.4584
+## 5              4385.2965
+## 6              7358.8164
+## 7              6394.2014
+## 8              2533.8060
+```
+
+```r
+# NNI < 1 clustered, >1 dispersed under CSR
+```
+
+
+clark evans test for Leptospirosis
+-R less than 1 indicates spatial clustering. The smaller the value of R, the greater the degree of clustering.
+mean centre and standard distance for Enteric fever
+
+
+```r
+CElep <- clarkevans.test(lepto_kel.ppp2)
+CElep16 <- clarkevans.test(loc_lep16.ppp2)
+CElep17 <-clarkevans.test(loc_lep17.ppp2)
+CElep18 <-clarkevans.test(loc_lep18.ppp2)
+CElep19 <-clarkevans.test(loc_lep19.ppp2)
+CElep20 <-clarkevans.test(loc_lep20.ppp2)
+CElep21 <-clarkevans.test(loc_lep21.ppp2)
+CElep22 <-clarkevans.test(loc_lep22.ppp2)
+
+
+tCElep <- data.frame(Dataset = "lepto_kel.ppp2",
+                       TestStatistic = CElep$statistic,
+                       PValue = CElep$p.value)
+tCElep16 <- data.frame(Dataset = "loc_lep16.ppp2",
+                       TestStatistic = CElep16$statistic,
+                       PValue = CElep16$p.value)
+tCElep17 <- data.frame(Dataset = "loc_lep17.ppp2",
+                       TestStatistic = CElep17$statistic,
+                       PValue = CElep17$p.value)
+tCElep18 <- data.frame(Dataset = "loc_lep18.ppp2",
+                       TestStatistic = CElep18$statistic,
+                       PValue = CElep18$p.value)
+tCElep19 <- data.frame(Dataset = "loc_lep19.ppp2",
+                       TestStatistic = CElep19$statistic,
+                       PValue = CElep19$p.value)
+tCElep20 <- data.frame(Dataset = "loc_lep20.ppp2",
+                       TestStatistic = CElep20$statistic,
+                       PValue = CElep20$p.value)
+tCElep21 <- data.frame(Dataset = "loc_lep21.ppp2",
+                       TestStatistic = CElep21$statistic,
+                       PValue = CElep21$p.value)
+tCElep22 <- data.frame(Dataset = "loc_lep22.ppp2",
+                       TestStatistic = CElep22$statistic,
+                       PValue = CElep22$p.value)
+
+CE_LEPr <- bind_rows(
+  data.frame(Dataset = "lepto_kel", tCElep),
+  data.frame(Dataset = "loc_lep16", tCElep16),
+  data.frame(Dataset = "loc_lep17", tCElep17),
+  data.frame(Dataset = "loc_lep18", tCElep18),
+  data.frame(Dataset = "loc_lep19", tCElep19),
+  data.frame(Dataset = "loc_lep20", tCElep20),
+  data.frame(Dataset = "loc_lep21", tCElep21),
+  data.frame(Dataset = "loc_lep22", tCElep22)
+)
+CE_LEPr
+```
+
+```
+##         Dataset      Dataset.1 TestStatistic       PValue
+## R...1 lepto_kel lepto_kel.ppp2     0.4903916 0.000000e+00
+## R...2 loc_lep16 loc_lep16.ppp2     0.5541314 0.000000e+00
+## R...3 loc_lep17 loc_lep17.ppp2     0.6710647 2.664535e-15
+## R...4 loc_lep18 loc_lep18.ppp2     0.6042739 0.000000e+00
+## R...5 loc_lep19 loc_lep19.ppp2     0.7024984 2.078245e-08
+## R...6 loc_lep20 loc_lep20.ppp2     0.7756988 5.420943e-03
+## R...7 loc_lep21 loc_lep21.ppp2     0.6411190 2.313728e-05
+## R...8 loc_lep22 loc_lep22.ppp2     0.6290886 0.000000e+00
+```
+
+```r
+# R less than 1 indicates spatial clustering. The smaller the value of R, the greater the degree of clustering.
+```
+
+mean center and standard distance for leptospirosis
+
+```r
+#calculate mean center (m) for leptospirosis
+lepxy <- coords(lepto_kel.ppp2)
+mclep <- summarize(lepxy, xmean = mean(x), ymean = mean(y))
+mclep
+```
+
+```
+##    xmean    ymean
+## 1 461684 625028.8
+```
+
+```r
+#calculate standard distance (m) for leptospirosis
+sdlep <- sqrt(sum((lepxy[,1] - mclep[1])^2 + (lepxy[,2] - mclep[2])^2) / nrow(lepxy))
+sdlep
+```
+
+```
+## [1] 2445.108
+```
+
+Median Absolute Deviation test with 99 simulations of Complete Spatial Randomness (CSR) for K function - enteric fever
+
+
+```r
+LEPMADTest16 <- mad.test(loc_lep16.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+```r
+LEPMADTest17 <- mad.test(loc_lep17.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+```r
+# MAD test took to long, not evaluated when rendering
+LEPMADTest18 <- mad.test(loc_lep18.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+```r
+LEPMADTest19 <- mad.test(loc_lep19.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+```r
+LEPMADTest20 <- mad.test(loc_lep20.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+```r
+LEPMADTest21 <- mad.test(loc_lep21.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+```r
+LEPMADTest22 <- mad.test(loc_lep22.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+```r
+LEPMADTest <- mad.test(lepto_kel.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```
+
+
+Result MAD for K test leptospirosis
+
+
+```r
+MAD_lep16.df <- data.frame(Dataset = "loc_lep16.ppp2",
+                       TestStatistic = LEPMADTest16$statistic,
+                       PValue = LEPMADTest16$p.value)
+MAD_lep17.df <- data.frame(Dataset = "loc_lep17.ppp2",
+                       TestStatistic = LEPMADTest17$statistic,
+                       PValue = LEPMADTest17$p.value)
+MAD_lep18.df <- data.frame(Dataset = "loc_lep18.ppp2",
+                       TestStatistic = LEPMADTest18$statistic,
+                       PValue = LEPMADTest18$p.value)
+MAD_lep19.df <- data.frame(Dataset = "loc_lep19.ppp2",
+                       TestStatistic = LEPMADTest19$statistic,
+                       PValue = LEPMADTest19$p.value)
+MAD_lep20.df <- data.frame(Dataset = "loc_lep20.ppp2",
+                       TestStatistic = LEPMADTest20$statistic,
+                       PValue = LEPMADTest20$p.value)
+MAD_lep21.df <- data.frame(Dataset = "loc_lep21.ppp2",
+                       TestStatistic = LEPMADTest21$statistic,
+                       PValue = LEPMADTest21$p.value)
+MAD_lep22.df <- data.frame(Dataset = "loc_lep22.ppp2",
+                       TestStatistic = LEPMADTest22$statistic,
+                       PValue = LEPMADTest22$p.value)
+
+#combine rows
+MAD_LEP <- bind_rows(
+  data.frame(Dataset = "2016", MAD_lep16.df),
+  data.frame(Dataset = "2017", MAD_lep17.df),
+  data.frame(Dataset = "2018", MAD_lep18.df),
+  data.frame(Dataset = "2019", MAD_lep19.df),
+  data.frame(Dataset = "2020", MAD_lep20.df),
+  data.frame(Dataset = "2021", MAD_lep21.df),
+  data.frame(Dataset = "2022", MAD_lep22.df)
+)
+MAD_LEP
+```
+
+
+K function leptospirosis
+
+
+```r
+KestLep16 <- Kest(loc_lep16.ppp2.km)
+KestLep17 <- Kest(loc_lep17.ppp2.km)
+KestLep18 <- Kest(loc_lep18.ppp2.km)
+KestLep19 <- Kest(loc_lep19.ppp2.km)
+KestLep20 <- Kest(loc_lep20.ppp2.km)
+KestLep21 <- Kest(loc_lep21.ppp2.km)
+KestLep22 <- Kest(loc_lep22.ppp2.km)
+```
+
+
+```r
+KestLep <- Kest(lepto_kel.ppp2.km)
+```
+
+
+Plot K test
+- Empirical values greater than theoretical values suggest clustering.
+- significance already tested using MAD test + MC permutation
+
+
+```r
+par( mfrow= c(2,4) )
+plot(KestLep16, main = "2016", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(KestLep17, main = "2017", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(KestLep18, main = "2018", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(KestLep19, main = "2019", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(KestLep20, main = "2020", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(KestLep21, main = "2021", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(KestLep22, main = "2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(KestLep, main = "2016-2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk22a-1.png)<!-- -->
+
+
+calculate G function for Leptospirosis
+
+
+```r
+# G function leptospirosis
+par( mfrow= c(2,4) )
+plot(Gest(loc_lep16.ppp2.km), main = "2016", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(Gest(loc_lep17.ppp2.km), main = "2017", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(Gest(loc_lep18.ppp2.km), main = "2018", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(Gest(loc_lep19.ppp2.km), main = "2019", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(Gest(loc_lep20.ppp2.km), main = "2020", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(Gest(loc_lep21.ppp2.km), main = "2021", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(Gest(loc_lep22.ppp2.km), main = "2022", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+plot(Gest(lepto_kel.ppp2.km), main = "2016-2022", cex.main = 3, cex.lab = 1.5, cex.axis = 1.5)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk23-1.png)<!-- -->
+
+
+Enveloped G function
+
+
+```r
+# G function leptospirosis fever per year
+par( mfrow= c(2,4) )
+GestLEP16 <- plot(envelope(loc_lep16.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2016",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestLEP17 <- plot(envelope(loc_lep17.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2017",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestLEP18 <- plot(envelope(loc_lep18.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2018",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestLEP19 <- plot(envelope(loc_lep19.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2019",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestLEP20 <- plot(envelope(loc_lep20.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2020",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestLEP21 <- plot(envelope(loc_lep21.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2021",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestLEP22 <- plot(envelope(loc_lep22.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2022",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016", cex.main = 2, cex.axis = 1, cex.lab = 1)
+GestLEP <- plot(envelope(lepto_kel.ppp2.km, Gest, nsim = 99, verbose = FALSE), main = "2016-2022",xlab = "Distance (KM)", ylab = "Proportion of Leptospirosis Cases 2016-2022", cex.main = 2, cex.axis = 1, cex.lab = 1)
+
+mtext("Enteric Fever Pattern in Kelantan 2016-2022", side = 3, line = -1, cex = 1.5, outer = TRUE)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk24a-1.png)<!-- -->
+
+
+F test of leptospirosis cases 2016-2022
+- empirical  values below theoretical (blue) suggest clustering
+
+
+```r
+par( mfrow= c(2,4) )
+plot(Fest(loc_lep16.ppp2.km), main = "2016", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_lep17.ppp2.km), main = "2017", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_lep18.ppp2.km), main = "2018", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_lep19.ppp2.km), main = "2019", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_lep20.ppp2.km), main = "2020", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_lep21.ppp2.km), main = "2021", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(loc_lep22.ppp2.km), main = "2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+plot(Fest(lepto_kel.ppp2.km), main = "2016-2022", cex.main = 3, cex.axis = 1.5, cex.lab = 1.5)
+
+mtext("Leptospirosis Pattern in Kelantan 2016-2022", side = 1, line = -1, cex = 1.5, outer = TRUE)
+```
+
+![](PP-Distance_files/figure-html/name-of-chunk25-1.png)<!-- -->
+
+Clark Evans test for enteric fever using Monte Carlo (normal distribution not assumed)
+
+
+```r
+CE_entmc <- clarkevans.test(Enteric_kel.ppp2, nsim=99)
+CE_ent16mc <- clarkevans.test(loc_ent16.ppp2, nsim=99)
+CE_ent17mc <- clarkevans.test(loc_ent17.ppp2, nsim=99)
+CE_ent18mc <- clarkevans.test(loc_ent18.ppp2, nsim=99)
+CE_ent19mc <- clarkevans.test(loc_ent19.ppp2, nsim=99)
+CE_ent20mc <- clarkevans.test(loc_ent20.ppp2, nsim=99)
+CE_ent21mc <- clarkevans.test(loc_ent21.ppp2, nsim=99)
+CE_ent22mc <- clarkevans.test(loc_ent22.ppp2, nsim=99)
+
+# dataframe
+CE_entmc.df <- data.frame(Dataset = "Enteric_kel.ppp2",
+                       TestStatistic = CE_entmc$statistic,
+                       PValue = CE_entmc$p.value)
+CE_ent16mc.df <- data.frame(Dataset = "loc_ent16.ppp2",
+                       TestStatistic = CE_ent16mc$statistic,
+                       PValue = CE_ent16mc$p.value)
+CE_ent17mc.df <- data.frame(Dataset = "loc_ent17.ppp2",
+                       TestStatistic = CE_ent17mc$statistic,
+                       PValue = CE_ent17mc$p.value)
+CE_ent18mc.df <- data.frame(Dataset = "loc_ent18.ppp2",
+                       TestStatistic = CE_ent18mc$statistic,
+                       PValue = CE_ent18mc$p.value)
+CE_ent19mc.df <- data.frame(Dataset = "loc_ent19.ppp2",
+                       TestStatistic = CE_ent19mc$statistic,
+                       PValue = CE_ent19mc$p.value)
+CE_ent20mc.df <- data.frame(Dataset = "loc_ent20.ppp2",
+                       TestStatistic = CE_ent20mc$statistic,
+                       PValue = CE_ent20mc$p.value)
+CE_ent21mc.df <- data.frame(Dataset = "loc_ent21.ppp2",
+                       TestStatistic = CE_ent21mc$statistic,
+                       PValue = CE_ent21mc$p.value)
+CE_ent22mc.df <- data.frame(Dataset = "loc_ent22.ppp2",
+                       TestStatistic = CE_ent22mc$statistic,
+                       PValue = CE_ent22mc$p.value)
+
+#combine rows
+CE_ENTmc <- bind_rows(
+  data.frame(Dataset = "2016-2022", CE_entmc.df),
+  data.frame(Dataset = "2016", CE_ent16mc.df),
+  data.frame(Dataset = "2017", CE_ent17mc.df),
+  data.frame(Dataset = "2018", CE_ent18mc.df),
+  data.frame(Dataset = "2019", CE_ent19mc.df),
+  data.frame(Dataset = "2020", CE_ent20mc.df),
+  data.frame(Dataset = "2021", CE_ent21mc.df),
+  data.frame(Dataset = "2022", CE_ent22mc.df)
+)
+```
+
+
+
+```r
+CE_ENTmc
+```
+
+```
+##         Dataset        Dataset.1 TestStatistic PValue
+## R...1 2016-2022 Enteric_kel.ppp2     0.3891718   0.02
+## R...2      2016   loc_ent16.ppp2     0.4751358   0.02
+## R...3      2017   loc_ent17.ppp2     0.4515081   0.02
+## R...4      2018   loc_ent18.ppp2     0.4216969   0.02
+## R...5      2019   loc_ent19.ppp2     0.4404068   0.02
+## R...6      2020   loc_ent20.ppp2     0.7830134   0.08
+## R...7      2021   loc_ent21.ppp2     0.5183861   0.04
+## R...8      2022   loc_ent22.ppp2     0.3621900   0.02
+```
+
+
+Clark Evans test for leptospirosis using Monte Carlo (normal distribution not assumed)
+
+
+```r
+CElepmc <- clarkevans.test(lepto_kel.ppp2)
+CElep16mc <- clarkevans.test(loc_lep16.ppp2)
+CElep17mc <-clarkevans.test(loc_lep17.ppp2)
+CElep18mc <-clarkevans.test(loc_lep18.ppp2)
+CElep19mc <-clarkevans.test(loc_lep19.ppp2)
+CElep20mc <-clarkevans.test(loc_lep20.ppp2)
+CElep21mc <-clarkevans.test(loc_lep21.ppp2)
+CElep22mc <-clarkevans.test(loc_lep22.ppp2)
+
+
+tCElepmc <- data.frame(Dataset = "lepto_kel.ppp2",
+                       TestStatistic = CElepmc$statistic,
+                       PValue = CElepmc$p.value)
+tCElep16mc <- data.frame(Dataset = "loc_lep16.ppp2",
+                       TestStatistic = CElep16mc$statistic,
+                       PValue = CElep16mc$p.value)
+tCElep17mc <- data.frame(Dataset = "loc_lep17.ppp2",
+                       TestStatistic = CElep17mc$statistic,
+                       PValue = CElep17mc$p.value)
+tCElep18mc <- data.frame(Dataset = "loc_lep18.ppp2",
+                       TestStatistic = CElep18mc$statistic,
+                       PValue = CElep18mc$p.value)
+tCElep19mc <- data.frame(Dataset = "loc_lep19.ppp2",
+                       TestStatistic = CElep19mc$statistic,
+                       PValue = CElep19mc$p.value)
+tCElep20mc <- data.frame(Dataset = "loc_lep20.ppp2",
+                       TestStatistic = CElep20mc$statistic,
+                       PValue = CElep20mc$p.value)
+tCElep21mc <- data.frame(Dataset = "loc_lep21.ppp2",
+                       TestStatistic = CElep21mc$statistic,
+                       PValue = CElep21mc$p.value)
+tCElep22mc <- data.frame(Dataset = "loc_lep22.ppp2",
+                       TestStatistic = CElep22mc$statistic,
+                       PValue = CElep22mc$p.value)
+
+CE_LEPrmc <- bind_rows(
+  data.frame(Dataset = "lepto_kel", tCElepmc),
+  data.frame(Dataset = "loc_lep16", tCElep16mc),
+  data.frame(Dataset = "loc_lep17", tCElep17mc),
+  data.frame(Dataset = "loc_lep18", tCElep18mc),
+  data.frame(Dataset = "loc_lep19", tCElep19mc),
+  data.frame(Dataset = "loc_lep20", tCElep20mc),
+  data.frame(Dataset = "loc_lep21", tCElep21mc),
+  data.frame(Dataset = "loc_lep22", tCElep22mc)
+)
+CE_LEPrmc
+```
+
+```
+##         Dataset      Dataset.1 TestStatistic       PValue
+## R...1 lepto_kel lepto_kel.ppp2     0.4903916 0.000000e+00
+## R...2 loc_lep16 loc_lep16.ppp2     0.5541314 0.000000e+00
+## R...3 loc_lep17 loc_lep17.ppp2     0.6710647 2.664535e-15
+## R...4 loc_lep18 loc_lep18.ppp2     0.6042739 0.000000e+00
+## R...5 loc_lep19 loc_lep19.ppp2     0.7024984 2.078245e-08
+## R...6 loc_lep20 loc_lep20.ppp2     0.7756988 5.420943e-03
+## R...7 loc_lep21 loc_lep21.ppp2     0.6411190 2.313728e-05
+## R...8 loc_lep22 loc_lep22.ppp2     0.6290886 0.000000e+00
+```
+
+
+
+
