@@ -794,7 +794,7 @@ NNI_LEP
 ```
 
 
-clark evans test for Enteric Fever
+clark evans test for Leptospirosis
 -R less than 1 indicates spatial clustering. The smaller the value of R, the greater the degree of clustering.
 mean centre and standard distance for Enteric fever
 
@@ -874,41 +874,35 @@ LEPMADTest16 <- mad.test(loc_lep16.ppp2.km, fun = Kest, nsim = 99, verbose = FAL
 LEPMADTest17 <- mad.test(loc_lep17.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
-```{r}
-#| cache = TRUE
+```{r, eval=FALSE}
+# MAD test took to long, not evaluated when rendering
 LEPMADTest18 <- mad.test(loc_lep18.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
-```{r}
-#| cache = TRUE
+```{r, eval=FALSE}
 LEPMADTest19 <- mad.test(loc_lep19.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
-```{r}
-#| cache = TRUE
+```{r, eval=FALSE}
 LEPMADTest20 <- mad.test(loc_lep20.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
-```{r}
-#| cache = TRUE
+```{r, eval=FALSE}
 LEPMADTest21 <- mad.test(loc_lep21.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
-```{r}
-#| cache = TRUE
-LEPMADTest22 <- mad.test(loc_lep21.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+```{r, eval=FALSE}
+LEPMADTest22 <- mad.test(loc_lep22.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
-```{r}
-#| cache = TRUE
+```{r, eval=FALSE}
 LEPMADTest <- mad.test(lepto_kel.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
 
 Result MAD for K test leptospirosis
 
-```{r}
-#| cache = TRUE
+```{r, eval=FALSE}
 MAD_lep16.df <- data.frame(Dataset = "loc_lep16.ppp2",
                        TestStatistic = LEPMADTest16$statistic,
                        PValue = LEPMADTest16$p.value)
@@ -1035,3 +1029,118 @@ plot(Fest(lepto_kel.ppp2.km), main = "2016-2022", cex.main = 3, cex.axis = 1.5, 
 
 mtext("Leptospirosis Pattern in Kelantan 2016-2022", side = 1, line = -1, cex = 1.5, outer = TRUE)
 ```
+
+Clark Evans test for enteric fever using Monte Carlo (normal distribution not assumed)
+
+```{r}
+#| cache = TRUE
+CE_entmc <- clarkevans.test(Enteric_kel.ppp2, nsim=99)
+CE_ent16mc <- clarkevans.test(loc_ent16.ppp2, nsim=99)
+CE_ent17mc <- clarkevans.test(loc_ent17.ppp2, nsim=99)
+CE_ent18mc <- clarkevans.test(loc_ent18.ppp2, nsim=99)
+CE_ent19mc <- clarkevans.test(loc_ent19.ppp2, nsim=99)
+CE_ent20mc <- clarkevans.test(loc_ent20.ppp2, nsim=99)
+CE_ent21mc <- clarkevans.test(loc_ent21.ppp2, nsim=99)
+CE_ent22mc <- clarkevans.test(loc_ent22.ppp2, nsim=99)
+
+# dataframe
+CE_entmc.df <- data.frame(Dataset = "Enteric_kel.ppp2",
+                       TestStatistic = CE_entmc$statistic,
+                       PValue = CE_entmc$p.value)
+CE_ent16mc.df <- data.frame(Dataset = "loc_ent16.ppp2",
+                       TestStatistic = CE_ent16mc$statistic,
+                       PValue = CE_ent16mc$p.value)
+CE_ent17mc.df <- data.frame(Dataset = "loc_ent17.ppp2",
+                       TestStatistic = CE_ent17mc$statistic,
+                       PValue = CE_ent17mc$p.value)
+CE_ent18mc.df <- data.frame(Dataset = "loc_ent18.ppp2",
+                       TestStatistic = CE_ent18mc$statistic,
+                       PValue = CE_ent18mc$p.value)
+CE_ent19mc.df <- data.frame(Dataset = "loc_ent19.ppp2",
+                       TestStatistic = CE_ent19mc$statistic,
+                       PValue = CE_ent19mc$p.value)
+CE_ent20mc.df <- data.frame(Dataset = "loc_ent20.ppp2",
+                       TestStatistic = CE_ent20mc$statistic,
+                       PValue = CE_ent20mc$p.value)
+CE_ent21mc.df <- data.frame(Dataset = "loc_ent21.ppp2",
+                       TestStatistic = CE_ent21mc$statistic,
+                       PValue = CE_ent21mc$p.value)
+CE_ent22mc.df <- data.frame(Dataset = "loc_ent22.ppp2",
+                       TestStatistic = CE_ent22mc$statistic,
+                       PValue = CE_ent22mc$p.value)
+
+#combine rows
+CE_ENTmc <- bind_rows(
+  data.frame(Dataset = "2016-2022", CE_entmc.df),
+  data.frame(Dataset = "2016", CE_ent16mc.df),
+  data.frame(Dataset = "2017", CE_ent17mc.df),
+  data.frame(Dataset = "2018", CE_ent18mc.df),
+  data.frame(Dataset = "2019", CE_ent19mc.df),
+  data.frame(Dataset = "2020", CE_ent20mc.df),
+  data.frame(Dataset = "2021", CE_ent21mc.df),
+  data.frame(Dataset = "2022", CE_ent22mc.df)
+)
+```
+
+
+```{r}
+CE_ENTmc
+```
+
+
+Clark Evans test for leptospirosis using Monte Carlo (normal distribution not assumed)
+
+```{r}
+#| cache = TRUE
+CElepmc <- clarkevans.test(lepto_kel.ppp2)
+CElep16mc <- clarkevans.test(loc_lep16.ppp2)
+CElep17mc <-clarkevans.test(loc_lep17.ppp2)
+CElep18mc <-clarkevans.test(loc_lep18.ppp2)
+CElep19mc <-clarkevans.test(loc_lep19.ppp2)
+CElep20mc <-clarkevans.test(loc_lep20.ppp2)
+CElep21mc <-clarkevans.test(loc_lep21.ppp2)
+CElep22mc <-clarkevans.test(loc_lep22.ppp2)
+
+
+tCElepmc <- data.frame(Dataset = "lepto_kel.ppp2",
+                       TestStatistic = CElepmc$statistic,
+                       PValue = CElepmc$p.value)
+tCElep16mc <- data.frame(Dataset = "loc_lep16.ppp2",
+                       TestStatistic = CElep16mc$statistic,
+                       PValue = CElep16mc$p.value)
+tCElep17mc <- data.frame(Dataset = "loc_lep17.ppp2",
+                       TestStatistic = CElep17mc$statistic,
+                       PValue = CElep17mc$p.value)
+tCElep18mc <- data.frame(Dataset = "loc_lep18.ppp2",
+                       TestStatistic = CElep18mc$statistic,
+                       PValue = CElep18mc$p.value)
+tCElep19mc <- data.frame(Dataset = "loc_lep19.ppp2",
+                       TestStatistic = CElep19mc$statistic,
+                       PValue = CElep19mc$p.value)
+tCElep20mc <- data.frame(Dataset = "loc_lep20.ppp2",
+                       TestStatistic = CElep20mc$statistic,
+                       PValue = CElep20mc$p.value)
+tCElep21mc <- data.frame(Dataset = "loc_lep21.ppp2",
+                       TestStatistic = CElep21mc$statistic,
+                       PValue = CElep21mc$p.value)
+tCElep22mc <- data.frame(Dataset = "loc_lep22.ppp2",
+                       TestStatistic = CElep22mc$statistic,
+                       PValue = CElep22mc$p.value)
+
+CE_LEPrmc <- bind_rows(
+  data.frame(Dataset = "lepto_kel", tCElepmc),
+  data.frame(Dataset = "loc_lep16", tCElep16mc),
+  data.frame(Dataset = "loc_lep17", tCElep17mc),
+  data.frame(Dataset = "loc_lep18", tCElep18mc),
+  data.frame(Dataset = "loc_lep19", tCElep19mc),
+  data.frame(Dataset = "loc_lep20", tCElep20mc),
+  data.frame(Dataset = "loc_lep21", tCElep21mc),
+  data.frame(Dataset = "loc_lep22", tCElep22mc)
+)
+CE_LEPrmc
+
+```
+
+
+
+

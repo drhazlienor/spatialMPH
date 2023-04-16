@@ -682,7 +682,7 @@ quadrant_lep [Local_Moran_lep[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep[,5],main = "LISA Map of Leptospirosis Cases 2016-2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(count_lep[,5],main = "2016-2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 
@@ -699,7 +699,7 @@ quadrant_lep16 [Local_Moran_lep16[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep16[,5],main = "LISA Map of Leptospirosis Cases 2016", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep16,brks,all.inside = FALSE)])
+plot(count_lep16[,5],main = "2016", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep16,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 
@@ -716,7 +716,7 @@ quadrant_lep17 [Local_Moran_lep17[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep17[,5],main = "LISA Map of Leptospirosis Cases 2017", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep17,brks,all.inside = FALSE)])
+plot(count_lep17[,5],main = "2017", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep17,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 
@@ -733,7 +733,7 @@ quadrant_lep18 [Local_Moran_lep18[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep18[,5],main = "LISA Map of Leptospirosis Cases 2018", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep18,brks,all.inside = FALSE)])
+plot(count_lep18[,5],main = "2018", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep18,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 
@@ -750,7 +750,7 @@ quadrant_lep19 [Local_Moran_lep19[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep19[,5],main = "LISA Map of Leptospirosis Cases 2019", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep19,brks,all.inside = FALSE)])
+plot(count_lep19[,5],main = "2019", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep19,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 
@@ -768,7 +768,7 @@ quadrant_lep22 [Local_Moran_lep22[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep22[,5],main = "LISA Map of Leptospirosis Cases 2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep22,brks,all.inside = FALSE)])
+plot(count_lep22[,5],main = "2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep22,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 ```

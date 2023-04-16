@@ -64,13 +64,6 @@ library(janitor)
 
 ```r
 library(gtsummary)
-```
-
-```
-## #BlackLivesMatter
-```
-
-```r
 library(DT)
 library(stringr)
 library(readxl)
@@ -339,7 +332,7 @@ polyENT_kel <- merge(kel_map, listENT_kel, by = c("MUKIM"))
 
 # count cases in mukim
 count_ent <- polyENT_kel%>% 
-  count(DAERAH, MUKIM, AVR) %>% 
+  count(Daerah, MUKIM, AVR) %>% 
   ungroup()
 
 # set neigbouring queen
@@ -350,7 +343,7 @@ nb_ent[[1]]
 ```
 
 ```
-## [1]  2  4  5 12
+## [1]  2  4  6 13
 ```
 
 ```r
@@ -906,13 +899,13 @@ prepare linelisting
 #extract leptospirosis 2016-2022
 linelist2 <- read_xlsx(here ("linelist.xlsx"))
 listLEP_kel <- filter(linelist2, Diagnosis=="Leptospirosis")
-LEP_kel16 <- filter(linelist2, `Tahun Daftar` =="2016")
-LEP_kel17 <- filter(linelist2, `Tahun Daftar` =="2017")
-LEP_kel18 <- filter(linelist2, `Tahun Daftar` =="2018")
-LEP_kel19 <- filter(linelist2, `Tahun Daftar` =="2019")
-LEP_kel20 <- filter(linelist2, `Tahun Daftar` =="2020")
-LEP_kel21 <- filter(linelist2, `Tahun Daftar` =="2021")
-LEP_kel22 <- filter(linelist2, `Tahun Daftar` =="2022")
+LEP_kel16 <- filter(listLEP_kel, `Tahun Daftar` =="2016")
+LEP_kel17 <- filter(listLEP_kel, `Tahun Daftar` =="2017")
+LEP_kel18 <- filter(listLEP_kel, `Tahun Daftar` =="2018")
+LEP_kel19 <- filter(listLEP_kel, `Tahun Daftar` =="2019")
+LEP_kel20 <- filter(listLEP_kel, `Tahun Daftar` =="2020")
+LEP_kel21 <- filter(listLEP_kel, `Tahun Daftar` =="2021")
+LEP_kel22 <- filter(listLEP_kel, `Tahun Daftar` =="2022")
 ```
 
 
@@ -1066,31 +1059,39 @@ count_lep19 <- polyLEP_kel19%>%
   count(DAERAH, MUKIM, AVR, JUMLAH_2019) %>% 
   ungroup()
 nb_lep19 <- poly2nb(count_lep19, queen = TRUE) #set neigbouring queen
-nb_lep19[[1]]
+nb_lep19
 ```
 
 ```
-## [1]  2  4 13
+## Neighbour list object:
+## Number of regions: 39 
+## Number of nonzero links: 120 
+## Percentage nonzero weights: 7.889546 
+## Average number of links: 3.076923 
+## 1 region with no links:
+## 8
 ```
 
 ```r
-lw_lep19 <- nb2listw(nb_lep19, style = "W" , zero.policy = TRUE) #assign weight
-lep19_lag <- lag.listw(lw_lep19, count_lep19$n) #create lag function
-moran.test(count_lep19$n, lw_lep19)
+nb_lep19s <-subset(nb_lep19, subset=card(nb_lep19) > 0)
+count_lep19s <-count_lep19[-c(8),]
+lw_lep19 <- nb2listw(nb_lep19s, style = "W" , zero.policy = TRUE) #assign weight
+lep19_lag <- lag.listw(lw_lep19, count_lep19s$n) #create lag function
+moran.test(count_lep19s$n, lw_lep19)
 ```
 
 ```
 ## 
 ## 	Moran I test under randomisation
 ## 
-## data:  count_lep19$n  
+## data:  count_lep19s$n  
 ## weights: lw_lep19    
 ## 
-## Moran I statistic standard deviate = 1.9572, p-value = 0.02516
+## Moran I statistic standard deviate = 1.8176, p-value = 0.03456
 ## alternative hypothesis: greater
 ## sample estimates:
 ## Moran I statistic       Expectation          Variance 
-##        0.19603894       -0.02325581        0.01255368
+##        0.20207850       -0.02702703        0.01588779
 ```
 
 
@@ -1254,8 +1255,8 @@ plotMlep18 <- ggplot(data = LEP18_poly) +
   labs(title="2018")
 
 #2019
-Local_Moran_lep19 <- localmoran(count_lep19$n,lw_lep19)
-LEP19_poly <- cbind(count_lep19, Local_Moran_lep19)
+Local_Moran_lep19 <- localmoran(count_lep19s$n,lw_lep19)
+LEP19_poly <- cbind(count_lep19s, Local_Moran_lep19)
 #plot Local Moran
 plotMlep19 <-ggplot(data = LEP19_poly) +
   geom_sf(aes(fill=Ii)) +
@@ -1374,7 +1375,7 @@ quadrant_lep [Local_Moran_lep[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep[,5],main = "LISA Map of Leptospirosis Cases 2016-2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(count_lep[,5],main = "2016-2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 ```
@@ -1395,7 +1396,7 @@ quadrant_lep16 [Local_Moran_lep16[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep16[,5],main = "LISA Map of Leptospirosis Cases 2016", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep16,brks,all.inside = FALSE)])
+plot(count_lep16[,5],main = "2016", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep16,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 ```
@@ -1448,13 +1449,13 @@ quadrant_lep17 [Local_Moran_lep17[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep17[,5],main = "LISA Map of Leptospirosis Cases 2017", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep17,brks,all.inside = FALSE)])
+plot(count_lep17[,5],main = "2017", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep17,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(count_lep17[, 5], main = "LISA Map of Leptospirosis Cases
-## 2017", : col is not of length 1 or nrow(x): colors will be recycled; use pal to
-## specify a color palette
+## Warning in plot.sf(count_lep17[, 5], main = "2017", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -1478,13 +1479,13 @@ quadrant_lep18 [Local_Moran_lep18[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep18[,5],main = "LISA Map of Leptospirosis Cases 2018", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep18,brks,all.inside = FALSE)])
+plot(count_lep18[,5],main = "2018", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep18,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(count_lep18[, 5], main = "LISA Map of Leptospirosis Cases
-## 2018", : col is not of length 1 or nrow(x): colors will be recycled; use pal to
-## specify a color palette
+## Warning in plot.sf(count_lep18[, 5], main = "2018", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -1496,10 +1497,10 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
 
 ```r
 #2019
-m_lep19 <- count_lep19$n - mean(count_lep19$n) 
+m_lep19 <- count_lep19s$n - mean(count_lep19s$n) 
 m_local_lep19 <- Local_Moran_lep19[,1]- mean(Local_Moran_lep19[,1]) 
 signif <- 0.05
-quadrant_lep19 <- vector(mode="numeric",length = nrow(Local_Moran_lep17))
+quadrant_lep19 <- vector(mode="numeric",length = nrow(Local_Moran_lep19))
 quadrant_lep19 [m_lep19>0 & m_local_lep19>0] <- 4
 quadrant_lep19 [m_lep19<0 & m_local_lep19<0] <- 1
 quadrant_lep19 [m_lep19<0 & m_local_lep19>0] <- 2
@@ -1508,13 +1509,13 @@ quadrant_lep19 [Local_Moran_lep19[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep19[,5],main = "LISA Map of Leptospirosis Cases 2019", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep19,brks,all.inside = FALSE)])
+plot(count_lep19[,5],main = "2019", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep19,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(count_lep19[, 5], main = "LISA Map of Leptospirosis Cases
-## 2019", : col is not of length 1 or nrow(x): colors will be recycled; use pal to
-## specify a color palette
+## Warning in plot.sf(count_lep19[, 5], main = "2019", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -1571,13 +1572,13 @@ quadrant_lep22 [Local_Moran_lep22[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(count_lep22[,5],main = "LISA Map of Leptospirosis Cases 2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep22,brks,all.inside = FALSE)])
+plot(count_lep22[,5],main = "2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep22,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(count_lep22[, 5], main = "LISA Map of Leptospirosis Cases
-## 2022", : col is not of length 1 or nrow(x): colors will be recycled; use pal to
-## specify a color palette
+## Warning in plot.sf(count_lep22[, 5], main = "2022", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -1604,7 +1605,12 @@ GiLEP16 <- ggplot(data=count_lep16) +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2016")
+GiLEP16
+```
 
+![](autocorrelation_files/figure-html/unnamed-chunk-29-1.png)<!-- -->
+
+```r
 #2017
 getis_ordlep17 <- localG(count_lep17$n, lw_lep17)
 count_lep17$getis_ord <- getis_ordlep17
@@ -1614,7 +1620,12 @@ GiLEP17 <- ggplot(data=count_lep17) +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2017")
+GiLEP17
+```
 
+![](autocorrelation_files/figure-html/unnamed-chunk-29-2.png)<!-- -->
+
+```r
 #2018
 getis_ordlep18 <- localG(count_lep18$n, lw_lep18)
 count_lep18$getis_ord <- getis_ordlep18
@@ -1624,17 +1635,27 @@ GiLEP18 <- ggplot(data=count_lep18) +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2018")
+GiLEP18
+```
 
+![](autocorrelation_files/figure-html/unnamed-chunk-29-3.png)<!-- -->
+
+```r
 #2019
-getis_ordlep19 <- localG(count_lep19$n, lw_lep19)
-count_lep19$getis_ord <- getis_ordlep19
-GiLEP19 <- ggplot(data=count_lep19) +
+getis_ordlep19 <- localG(count_lep19s$n, lw_lep19)
+count_lep19s$getis_ord <- getis_ordlep19
+GiLEP19 <- ggplot(data=count_lep19s) +
   geom_sf(aes(fill=getis_ord)) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2019")
+GiLEP19
+```
 
+![](autocorrelation_files/figure-html/unnamed-chunk-29-4.png)<!-- -->
+
+```r
 #2020
 getis_ordlep20 <- localG(count_lep20$n, lw_lep20)
 count_lep20$getis_ord <- getis_ordlep20
@@ -1644,7 +1665,12 @@ GiLEP20 <- ggplot(data=count_lep20) +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2020")
+GiLEP20
+```
 
+![](autocorrelation_files/figure-html/unnamed-chunk-29-5.png)<!-- -->
+
+```r
 #2021
 getis_ordlep21 <- localG(count_lep21$n, lw_lep21)
 count_lep21$getis_ord <- getis_ordlep21
@@ -1654,7 +1680,12 @@ GiLEP21 <- ggplot(data=count_lep21) +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2021")
+GiLEP21
+```
 
+![](autocorrelation_files/figure-html/unnamed-chunk-29-6.png)<!-- -->
+
+```r
 #2022
 getis_ordlep22 <- localG(count_lep22$n, lw_lep22)
 count_lep22$getis_ord <- getis_ordlep22
@@ -1664,7 +1695,12 @@ GiLEP22 <- ggplot(data=count_lep22) +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2022")
+GiLEP22
+```
 
+![](autocorrelation_files/figure-html/unnamed-chunk-29-7.png)<!-- -->
+
+```r
 #2016-2022
 getis_ordlep <- localG(count_lep$n, lw_lep)
 count_lep$getis_ord <- getis_ordlep
@@ -1674,7 +1710,10 @@ GiLEP <- ggplot(data=count_lep) +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
   labs(title="2016-2022")
+GiLEP
 ```
+
+![](autocorrelation_files/figure-html/unnamed-chunk-29-8.png)<!-- -->
 
 
 plot Getis ord Map for leptospirosis
@@ -2080,47 +2119,25 @@ moran.test(inc_lep_kel18$inc_1000, lw_lep_inc18)
 inc_lep_kel19 <- count_lep19 %>% 
   mutate(inc_1000 = (n/JUMLAH_2019)*1000)
 nb_lep_inc19 <- poly2nb(inc_lep_kel19, queen = TRUE) #set neigbouring queen
-lw_lep_inc19 <- nb2listw(nb_lep_inc19, style = "W" , zero.policy = TRUE) #assign weight
-lep_inc_lag19 <- lag.listw(lw_lep_inc19, inc_lep_kel19$inc_1000) #create lag function
-moran.test(inc_lep_kel19$inc_1000, lw_lep_inc19)
+nb_lep_inc19s <-subset(nb_lep_inc19, subset=card(nb_lep_inc19) > 0)
+inc_lep_kel19s <-inc_lep_kel19[-c(8),]
+lw_lep_inc19 <- nb2listw(nb_lep_inc19s, style = "W" , zero.policy = TRUE) #assign weight
+lep_inc_lag19 <- lag.listw(lw_lep_inc19, inc_lep_kel19s$inc_1000) #create lag function
+moran.test(inc_lep_kel19s$inc_1000, lw_lep_inc19)
 ```
 
 ```
 ## 
 ## 	Moran I test under randomisation
 ## 
-## data:  inc_lep_kel19$inc_1000  
+## data:  inc_lep_kel19s$inc_1000  
 ## weights: lw_lep_inc19    
 ## 
-## Moran I statistic standard deviate = 1.9479, p-value = 0.02572
+## Moran I statistic standard deviate = 2.0521, p-value = 0.02008
 ## alternative hypothesis: greater
 ## sample estimates:
 ## Moran I statistic       Expectation          Variance 
-##        0.21054442       -0.02325581        0.01440711
-```
-
-```r
-# 2020
-inc_lep_kel20 <- count_lep20 %>% 
-  mutate(inc_1000 = (n/JUMLAH_2020)*1000)
-nb_lep_inc20 <- poly2nb(inc_lep_kel20, queen = TRUE) #set neigbouring queen
-lw_lep_inc20 <- nb2listw(nb_lep_inc20, style = "W" , zero.policy = TRUE) #assign weight
-lep_inc_lag20 <- lag.listw(lw_lep_inc20, inc_lep_kel20$inc_1000) #create lag function
-moran.test(inc_lep_kel20$inc_1000, lw_lep_inc20)
-```
-
-```
-## 
-## 	Moran I test under randomisation
-## 
-## data:  inc_lep_kel20$inc_1000  
-## weights: lw_lep_inc20    
-## 
-## Moran I statistic standard deviate = -0.072362, p-value = 0.5288
-## alternative hypothesis: greater
-## sample estimates:
-## Moran I statistic       Expectation          Variance 
-##       -0.04296197       -0.03225806        0.02188083
+##        0.25164972       -0.02702703        0.01844180
 ```
 
 ```r
@@ -2196,6 +2213,20 @@ moran.test(inc_lep_kel$inc_1000, lw_lep_inc)
 ```
 
 
+```r
+# 2020
+inc_lep_kel20 <- count_lep20 %>% 
+  mutate(inc_1000 = (n/JUMLAH_2020)*1000)
+nb_lep_inc20 <- poly2nb(inc_lep_kel20, queen = TRUE) #set neigbouring queen
+nb_lep_inc20s <-subset(nb_lep_inc20, subset=card(nb_lep_inc20) > 0)
+inc_lep_kel20s <-inc_lep_kel20[-c(1, 5),]
+lw_lep_inc20 <- nb2listw(nb_lep_inc20s, style = "W" , zero.policy = TRUE) #assign weight
+lep_inc_lag20 <- lag.listw(lw_lep_inc20, inc_lep_kel20s$inc_1000) #create lag function
+moran.test(inc_lep_kel20s$inc_1000, lw_lep_inc20)
+```
+
+
+
 local Moran for Leptospirosis incidence
 
 
@@ -2213,7 +2244,7 @@ plotMlep16inc <- ggplot(data = LEP16inc_poly) +
 plot(plotMlep16inc) 
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-32-1.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-33-1.png)<!-- -->
 
 ```r
 #2017
@@ -2229,7 +2260,7 @@ plotMlep17inc <- ggplot(data = LEP17inc_poly) +
 plot(plotMlep17inc) 
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-32-2.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-33-2.png)<!-- -->
 
 ```r
 #2018
@@ -2245,12 +2276,12 @@ plotMlep18inc <- ggplot(data = LEP18inc_poly) +
 plot(plotMlep18inc) 
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-32-3.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-33-3.png)<!-- -->
 
 ```r
 #2019
-Local_Moran_lep19inc <- localmoran(inc_lep_kel19$inc_1000,lw_lep_inc19)
-LEP19inc_poly <- cbind(inc_lep_kel19, Local_Moran_lep19inc)
+Local_Moran_lep19inc <- localmoran(inc_lep_kel19s$inc_1000,lw_lep_inc19)
+LEP19inc_poly <- cbind(inc_lep_kel19s, Local_Moran_lep19inc)
 #plot Local Moran
 plotMlep19inc <- ggplot(data = LEP19inc_poly) +
   geom_sf(aes(fill=Ii)) +
@@ -2261,23 +2292,7 @@ plotMlep19inc <- ggplot(data = LEP19inc_poly) +
 plot(plotMlep19inc)
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-32-4.png)<!-- -->
-
-```r
-#2020
-Local_Moran_lep20inc <- localmoran(inc_lep_kel20$inc_1000,lw_lep_inc20)
-LEP20inc_poly <- cbind(inc_lep_kel20, Local_Moran_lep20inc)
-#plot Local Moran
-plotMlep20inc <- ggplot(data = LEP20inc_poly) +
-  geom_sf(aes(fill=Ii)) +
-  theme_bw() +
-  scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
-                       name="Local Moran's I") +
-  labs(title="2020")
-plot(plotMlep20inc)
-```
-
-![](autocorrelation_files/figure-html/unnamed-chunk-32-5.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-33-4.png)<!-- -->
 
 ```r
 #2021
@@ -2293,7 +2308,7 @@ plotMlep21inc <- ggplot(data = LEP21inc_poly) +
 plot(plotMlep21inc)
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-32-6.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-33-5.png)<!-- -->
 
 ```r
 #2022
@@ -2309,7 +2324,7 @@ plotMlep22inc <- ggplot(data = LEP22inc_poly) +
 plot(plotMlep22inc)
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-32-7.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-33-6.png)<!-- -->
 
 ```r
 #2016-2022
@@ -2325,7 +2340,23 @@ plotMlepinc <- ggplot(data = LEPinc_poly) +
 plot(plotMlepinc)
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-32-8.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-33-7.png)<!-- -->
+
+
+```r
+#2020
+Local_Moran_lep20inc <- localmoran(inc_lep_kel20s$inc_1000,lw_lep_inc20)
+LEP20inc_poly <- cbind(inc_lep_kel20s, Local_Moran_lep20inc)
+#plot Local Moran
+plotMlep20inc <- ggplot(data = LEP20inc_poly) +
+  geom_sf(aes(fill=Ii)) +
+  theme_bw() +
+  scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
+                       name="Local Moran's I") +
+  labs(title="2020")
+plot(plotMlep20inc)
+```
+
 
 
 Plot Local Moran for Leptospirosis incidence
@@ -2415,12 +2446,12 @@ quadrant_lep [Local_Moran_lepinc[,5]] <- 0
 #plot LISA
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(inc_lep_kel[,5],main = "LISA Map of Leptospirosis Incidence 2016-2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(inc_lep_kel[,5],main = "2016-2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
        fill=colors,bty="n")
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-34-1.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-36-1.png)<!-- -->
 
 ```r
 #LISA 2016leptospirosis incidence
@@ -2435,13 +2466,13 @@ quadrant_lep [m_lepinc16>0 & m_local_lepinc16<0] <- 3
 quadrant_lep [Local_Moran_lep16inc[,5]] <- 0
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(inc_lep_kel16[,5],main = "LISA Map of Leptospirosis Incidence 2016", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(inc_lep_kel16[,5],main = "2016", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(inc_lep_kel16[, 5], main = "LISA Map of Leptospirosis
-## Incidence 2016", : col is not of length 1 or nrow(x): colors will be recycled;
-## use pal to specify a color palette
+## Warning in plot.sf(inc_lep_kel16[, 5], main = "2016", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -2449,7 +2480,7 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
        fill=colors,bty="n")
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-34-2.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-36-2.png)<!-- -->
 
 ```r
 #LISA 2017leptospirosis incidence
@@ -2464,13 +2495,13 @@ quadrant_lep [m_lepinc17>0 & m_local_lepinc17<0] <- 3
 quadrant_lep [Local_Moran_lep17inc[,5]] <- 0
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(inc_lep_kel17[,5],main = "LISA Map of Leptospirosis Incidence 2017", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(inc_lep_kel17[,5],main = "2017", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(inc_lep_kel17[, 5], main = "LISA Map of Leptospirosis
-## Incidence 2017", : col is not of length 1 or nrow(x): colors will be recycled;
-## use pal to specify a color palette
+## Warning in plot.sf(inc_lep_kel17[, 5], main = "2017", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -2478,7 +2509,7 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
        fill=colors,bty="n")
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-34-3.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-36-3.png)<!-- -->
 
 ```r
 #LISA 2018leptospirosis incidence
@@ -2493,13 +2524,13 @@ quadrant_lep [m_lepinc18>0 & m_local_lepinc18<0] <- 3
 quadrant_lep [Local_Moran_lep18inc[,5]] <- 0
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(inc_lep_kel18[,5],main = "LISA Map of Leptospirosis Incidence 2018", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(inc_lep_kel18[,5],main = "2018", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(inc_lep_kel18[, 5], main = "LISA Map of Leptospirosis
-## Incidence 2018", : col is not of length 1 or nrow(x): colors will be recycled;
-## use pal to specify a color palette
+## Warning in plot.sf(inc_lep_kel18[, 5], main = "2018", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -2507,11 +2538,11 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
        fill=colors,bty="n")
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-34-4.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-36-4.png)<!-- -->
 
 ```r
 #LISA 2019leptospirosis incidence
-m_lepinc19 <- inc_lep_kel19$inc_1000 - mean(inc_lep_kel19$inc_1000) 
+m_lepinc19 <- inc_lep_kel19s$inc_1000 - mean(inc_lep_kel19s$inc_1000) 
 m_local_lepinc19 <- Local_Moran_lep19inc[,1]- mean(Local_Moran_lep19inc[,1]) 
 signif <- 0.05 
 quadrant_lep19inc <- vector(mode="numeric",length = nrow(Local_Moran_lep19inc))
@@ -2522,13 +2553,13 @@ quadrant_lep [m_lepinc19>0 & m_local_lepinc19<0] <- 3
 quadrant_lep [Local_Moran_lep19inc[,5]] <- 0
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(inc_lep_kel19[,5],main = "LISA Map of Leptospirosis Incidence 2019", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(inc_lep_kel19[,5],main = "2019", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(inc_lep_kel19[, 5], main = "LISA Map of Leptospirosis
-## Incidence 2019", : col is not of length 1 or nrow(x): colors will be recycled;
-## use pal to specify a color palette
+## Warning in plot.sf(inc_lep_kel19[, 5], main = "2019", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -2536,7 +2567,7 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
        fill=colors,bty="n")
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-34-5.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-36-5.png)<!-- -->
 
 ```r
 #LISA 2022leptospirosis incidence
@@ -2551,13 +2582,13 @@ quadrant_lep [m_lepinc22>0 & m_local_lepinc22<0] <- 3
 quadrant_lep [Local_Moran_lep22inc[,5]] <- 0
 brks <- c(0,1,2,3,4)
 colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
-plot(inc_lep_kel22[,5],main = "LISA Map of Leptospirosis Incidence 2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+plot(inc_lep_kel22[,5],main = "2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
 ```
 
 ```
-## Warning in plot.sf(inc_lep_kel22[, 5], main = "LISA Map of Leptospirosis
-## Incidence 2022", : col is not of length 1 or nrow(x): colors will be recycled;
-## use pal to specify a color palette
+## Warning in plot.sf(inc_lep_kel22[, 5], main = "2022", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
 ```
 
 ```r
@@ -2565,7 +2596,7 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
        fill=colors,bty="n")
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-34-6.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-36-6.png)<!-- -->
 
 # corelation between cases abd population density
 
@@ -2635,7 +2666,7 @@ lee_testent17
 
 ```r
 # 2018
-lee_testent18 <- lee.test(x=count_ent18s$n, y=count_ent18s$JUMLAH_2018, listw=lw_ent18)      
+lee_testent18 <- lee.test(x=count_ent18s$n, y=count_ent18s$JUMLAH_2018, listw=lw_ent18)     
 lee_testent18
 ```
 
@@ -2651,26 +2682,6 @@ lee_testent18
 ## sample estimates:
 ## Lee's L statistic       Expectation          Variance 
 ##       -0.36752221       -0.17155562        0.01829986
-```
-
-```r
-# 2019
-lee_testent19 <- lee.test(x=count_ent19s$n, y=count_ent19s$JUMLAH_2019, listw=lw_ent19)     
-lee_testent19
-```
-
-```
-## 
-## 	Lee's L statistic randomisation
-## 
-## data:  count_ent19s$n ,  count_ent19s$JUMLAH_2019 
-## weights: lw_ent19  
-## 
-## Lee's L statistic standard deviate = -0.34283, p-value = 0.6341
-## alternative hypothesis: greater
-## sample estimates:
-## Lee's L statistic       Expectation          Variance 
-##       -0.23896174       -0.18561181        0.02421656
 ```
 
 ```r
@@ -2739,6 +2750,26 @@ lee_testent22
 ## sample estimates:
 ## Lee's L statistic       Expectation          Variance 
 ##        0.09523630       -0.27445724        0.03169109
+```
+
+```r
+# 2019
+lee_testent19 <- lee.test(x=count_ent19s$n, y=count_ent19s$JUMLAH_2019, listw=lw_ent19)     
+lee_testent19
+```
+
+```
+## 
+## 	Lee's L statistic randomisation
+## 
+## data:  count_ent19s$n ,  count_ent19s$JUMLAH_2019 
+## weights: lw_ent19  
+## 
+## Lee's L statistic standard deviate = -0.34283, p-value = 0.6341
+## alternative hypothesis: greater
+## sample estimates:
+## Lee's L statistic       Expectation          Variance 
+##       -0.23896174       -0.18561181        0.02421656
 ```
 
 spatial relation of leptospirosis cases to population by Lee's L test
@@ -2827,7 +2858,7 @@ lee_testlep18
 
 ```r
 # 2019
-lee_testlep19 <- lee.test(x=inc_lep_kel19$n, y=inc_lep_kel19$JUMLAH_2019, listw=lw_lep19)
+lee_testlep19 <- lee.test(x=inc_lep_kel19s$n, y=inc_lep_kel19s$JUMLAH_2019, listw=lw_lep19)
 lee_testlep19
 ```
 
@@ -2835,34 +2866,14 @@ lee_testlep19
 ## 
 ## 	Lee's L statistic randomisation
 ## 
-## data:  inc_lep_kel19$n ,  inc_lep_kel19$JUMLAH_2019 
+## data:  inc_lep_kel19s$n ,  inc_lep_kel19s$JUMLAH_2019 
 ## weights: lw_lep19  
 ## 
-## Lee's L statistic standard deviate = -0.59893, p-value = 0.7254
+## Lee's L statistic standard deviate = -0.7183, p-value = 0.7637
 ## alternative hypothesis: greater
 ## sample estimates:
 ## Lee's L statistic       Expectation          Variance 
-##        0.12688293        0.18720509        0.01014398
-```
-
-```r
-# 2020
-lee_testlep20 <- lee.test(x=inc_lep_kel20$n, y=inc_lep_kel20$JUMLAH_2020, listw=lw_lep20)
-lee_testlep20
-```
-
-```
-## 
-## 	Lee's L statistic randomisation
-## 
-## data:  inc_lep_kel20$n ,  inc_lep_kel20$JUMLAH_2020 
-## weights: lw_lep20  
-## 
-## Lee's L statistic standard deviate = 0.18855, p-value = 0.4252
-## alternative hypothesis: greater
-## sample estimates:
-## Lee's L statistic       Expectation          Variance 
-##        0.13559613        0.11598263        0.01082074
+##        0.12367902        0.20527384        0.01290383
 ```
 
 ```r
@@ -2904,3 +2915,12 @@ lee_testlep22
 ## Lee's L statistic       Expectation          Variance 
 ##       0.075754669       0.088327250       0.003760455
 ```
+
+
+
+```r
+# 2020
+lee_testlep20 <- lee.test(x=inc_lep_kel20$n, y=inc_lep_kel20$JUMLAH_2020, listw=lw_lep20)
+lee_testlep20
+```
+
