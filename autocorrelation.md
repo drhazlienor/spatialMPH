@@ -64,6 +64,13 @@ library(janitor)
 
 ```r
 library(gtsummary)
+```
+
+```
+## #BlackLivesMatter
+```
+
+```r
 library(DT)
 library(stringr)
 library(readxl)
@@ -1102,32 +1109,42 @@ count_lep20 <- polyLEP_kel20%>%
   count(DAERAH, MUKIM, AVR, JUMLAH_2020) %>% 
   ungroup()
 nb_lep20 <- poly2nb(count_lep20, queen = TRUE) #set neigbouring queen
-nb_lep20[[1]]
+nb_lep20
 ```
 
 ```
-## [1]  2  6 24
+## Neighbour list object:
+## Number of regions: 26 
+## Number of nonzero links: 66 
+## Percentage nonzero weights: 9.763314 
+## Average number of links: 2.538462 
+## 2 regions with no links:
+## 1 5
 ```
 
 ```r
-lw_lep20 <- nb2listw(nb_lep20, style = "W" , zero.policy = TRUE) #assign weight
-lep20_lag <- lag.listw(lw_lep20, count_lep20$n) #create lag function
-moran.test(count_lep20$n, lw_lep20)
+nb_lep20s <-subset(nb_lep20, subset=card(nb_lep20) > 0)
+count_lep20s <-count_lep20[-c(1,5),]
+lw_lep20 <- nb2listw(nb_lep20s, style = "W" , zero.policy = TRUE) #assign weight
+lep20_lag <- lag.listw(lw_lep20, count_lep20s$n) #create lag function
+moran.test(count_lep20s$n, lw_lep20)
 ```
 
 ```
 ## 
 ## 	Moran I test under randomisation
 ## 
-## data:  count_lep20$n  
+## data:  count_lep20s$n  
 ## weights: lw_lep20    
 ## 
-## Moran I statistic standard deviate = 0.64132, p-value = 0.2607
+## Moran I statistic standard deviate = -0.28605, p-value = 0.6126
 ## alternative hypothesis: greater
 ## sample estimates:
 ## Moran I statistic       Expectation          Variance 
-##        0.06616304       -0.03225806        0.02355229
+##       -0.09464286       -0.04347826        0.03199227
 ```
+
+
 
 
 ```r
@@ -1141,7 +1158,7 @@ nb_lep21[[1]]
 ```
 
 ```
-## [1]  2  3  4 12
+## [1]  2  3  4 11
 ```
 
 ```r
@@ -1157,11 +1174,11 @@ moran.test(count_lep21$n, lw_lep21)
 ## data:  count_lep21$n  
 ## weights: lw_lep21    
 ## 
-## Moran I statistic standard deviate = 0.46606, p-value = 0.3206
+## Moran I statistic standard deviate = 1.21, p-value = 0.1131
 ## alternative hypothesis: greater
 ## sample estimates:
 ## Moran I statistic       Expectation          Variance 
-##        0.03513072       -0.04545455        0.02989761
+##        0.17083333       -0.04761905        0.03259567
 ```
 
 
@@ -1230,8 +1247,24 @@ plotMlep16 <- ggplot(data = LEP16_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2016")
+  labs(title="2016") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
+```
 
+```
+## Warning: The `size` argument of `element_rect()` is deprecated as of ggplot2 3.4.0.
+## ℹ Please use the `linewidth` argument instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+```
+
+```r
 #2017
 Local_Moran_lep17 <- localmoran(count_lep17$n,lw_lep17)
 LEP17_poly <- cbind(count_lep17, Local_Moran_lep17)
@@ -1241,7 +1274,13 @@ plotMlep17 <- ggplot(data = LEP17_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2017")
+  labs(title="2017") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 
 #2018
 Local_Moran_lep18 <- localmoran(count_lep18$n,lw_lep18)
@@ -1252,7 +1291,13 @@ plotMlep18 <- ggplot(data = LEP18_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2018")
+  labs(title="2018") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 
 #2019
 Local_Moran_lep19 <- localmoran(count_lep19s$n,lw_lep19)
@@ -1263,7 +1308,13 @@ plotMlep19 <-ggplot(data = LEP19_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2019")
+  labs(title="2019") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 
 #2020 - Global Moran's not significant
 #2021 - Global Moran's not significant
@@ -1277,7 +1328,13 @@ plotMlep22 <-ggplot(data = LEP22_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2022")
+  labs(title="2022") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 
 #2016-2022
 plotMlep <-ggplot(data = LEP_poly) +
@@ -1285,7 +1342,13 @@ plotMlep <-ggplot(data = LEP_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2016-2022")
+  labs(title="2016-2022") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 ```
 
 
@@ -1604,7 +1667,13 @@ GiLEP16 <- ggplot(data=count_lep16) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2016")
+  labs(title="2016") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP16
 ```
 
@@ -1619,7 +1688,13 @@ GiLEP17 <- ggplot(data=count_lep17) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2017")
+  labs(title="2017") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP17
 ```
 
@@ -1634,7 +1709,13 @@ GiLEP18 <- ggplot(data=count_lep18) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2018")
+  labs(title="2018") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP18
 ```
 
@@ -1649,7 +1730,13 @@ GiLEP19 <- ggplot(data=count_lep19s) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2019")
+  labs(title="2019") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP19
 ```
 
@@ -1657,14 +1744,20 @@ GiLEP19
 
 ```r
 #2020
-getis_ordlep20 <- localG(count_lep20$n, lw_lep20)
-count_lep20$getis_ord <- getis_ordlep20
-GiLEP20 <- ggplot(data=count_lep20) +
+getis_ordlep20 <- localG(count_lep20s$n, lw_lep20)
+count_lep20s$getis_ord <- getis_ordlep20
+GiLEP20 <- ggplot(data=count_lep20s) +
   geom_sf(aes(fill=getis_ord)) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2020")
+  labs(title="2020") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP20
 ```
 
@@ -1679,7 +1772,13 @@ GiLEP21 <- ggplot(data=count_lep21) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2021")
+  labs(title="2021") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP21
 ```
 
@@ -1694,7 +1793,13 @@ GiLEP22 <- ggplot(data=count_lep22) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2022")
+  labs(title="2022") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP22
 ```
 
@@ -1709,7 +1814,13 @@ GiLEP <- ggplot(data=count_lep) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Gi*") +
-  labs(title="2016-2022")
+  labs(title="2016-2022") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 GiLEP
 ```
 
@@ -2157,11 +2268,11 @@ moran.test(inc_lep_kel21$inc_1000, lw_lep_inc21)
 ## data:  inc_lep_kel21$inc_1000  
 ## weights: lw_lep_inc21    
 ## 
-## Moran I statistic standard deviate = 1.4274, p-value = 0.07673
+## Moran I statistic standard deviate = 1.7475, p-value = 0.04028
 ## alternative hypothesis: greater
 ## sample estimates:
 ## Moran I statistic       Expectation          Variance 
-##        0.18502302       -0.04545455        0.02607165
+##        0.22745332       -0.04761905        0.02477842
 ```
 
 ```r
@@ -2240,7 +2351,13 @@ plotMlep16inc <- ggplot(data = LEP16inc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2016")
+  labs(title="2016") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 plot(plotMlep16inc) 
 ```
 
@@ -2256,7 +2373,13 @@ plotMlep17inc <- ggplot(data = LEP17inc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2017")
+  labs(title="2017") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 plot(plotMlep17inc) 
 ```
 
@@ -2272,7 +2395,13 @@ plotMlep18inc <- ggplot(data = LEP18inc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2018")
+  labs(title="2018") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 plot(plotMlep18inc) 
 ```
 
@@ -2288,7 +2417,13 @@ plotMlep19inc <- ggplot(data = LEP19inc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2019")
+  labs(title="2019") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 plot(plotMlep19inc)
 ```
 
@@ -2304,7 +2439,13 @@ plotMlep21inc <- ggplot(data = LEP21inc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2021")
+  labs(title="2021") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 plot(plotMlep21inc)
 ```
 
@@ -2320,7 +2461,13 @@ plotMlep22inc <- ggplot(data = LEP22inc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2022")
+  labs(title="2022") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 plot(plotMlep22inc)
 ```
 
@@ -2336,7 +2483,13 @@ plotMlepinc <- ggplot(data = LEPinc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2016-2020")
+  labs(title="2016-2020") +
+  theme(legend.position = c(0.15, 0.85),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7), 
+        legend.key.size = unit(0.35, 'cm'), 
+        panel.border = element_rect(fill=NA, colour = "black", size=1))
 plot(plotMlepinc)
 ```
 
@@ -2353,18 +2506,22 @@ plotMlep20inc <- ggplot(data = LEP20inc_poly) +
   theme_bw() +
   scale_fill_gradient2(low="#2c7bb6", mid="#ffffbf", high="#d7191c",
                        name="Local Moran's I") +
-  labs(title="2020")
+  labs(title="2020") +
+  theme(legend.position = c(0.2, 0.8),
+        legend.background = element_rect(fill = "white", color = "black"), 
+        legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7))
 plot(plotMlep20inc)
 ```
 
 
 
 Plot Local Moran for Leptospirosis incidence
-- 2020-2021 excluded (not significant)
+- 2020excluded (not significant)
 
 
 ```r
-grid.arrange(plotMlep16inc, plotMlep17inc, plotMlep18inc, plotMlep19inc, plotMlep22inc, plotMlepinc,  nrow=2, top=textGrob("Local Moran's I Map of Leptospirosis Incidence in Kelantan 2016-2022", gp = gpar(fontsize = 20)))
+grid.arrange(plotMlep16inc, plotMlep17inc, plotMlep18inc, plotMlep19inc, plotMlep22inc, plotMlep21inc, plotMlepinc,  nrow=2, top=textGrob("Local Moran's I Map of Leptospirosis Incidence in Kelantan 2016-2022", gp = gpar(fontsize = 20)))
 ```
 
 ![](autocorrelation_files/figure-html/name-of-chunk29-1.png)<!-- -->
@@ -2402,6 +2559,13 @@ LMp19i <- tm_shape(LEP19inc_poly) +
           title = "2019")+
   tm_borders(alpha = 0.5)
 
+LMp21i <- tm_shape(LEP21inc_poly) +
+  tm_fill(col = "Pr.z....E.Ii..",
+          breaks=c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+          palette = "-Blues",
+          title = "2021")+
+  tm_borders(alpha = 0.5)
+
 LMp22i <- tm_shape(LEP22inc_poly) +
   tm_fill(col = "Pr.z....E.Ii..",
           breaks=c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
@@ -2422,7 +2586,7 @@ plot Local Moran's I p-values leptospirosis incidence
 
 ```r
 # combine all local moran pvalue plot for leptospirosis  in one view
-tmap_arrange(LMp16i, LMp17i, LMp18i, LMp19i, LMp22i, LMpi, ncol = 3) 
+tmap_arrange(LMp16i, LMp17i, LMp18i, LMp19i, LMp21i, LMp22i, LMpi, ncol = 4) 
 ```
 
 ![](autocorrelation_files/figure-html/name-of-chunk30-1.png)<!-- -->
@@ -2570,6 +2734,35 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
 ![](autocorrelation_files/figure-html/unnamed-chunk-36-5.png)<!-- -->
 
 ```r
+#LISA 2021leptospirosis incidence
+m_lepinc21 <- inc_lep_kel21$inc_1000 - mean(inc_lep_kel21$inc_1000) 
+m_local_lepinc21 <- Local_Moran_lep21inc[,1]- mean(Local_Moran_lep21inc[,1]) 
+signif <- 0.05 
+quadrant_lep21inc <- vector(mode="numeric",length = nrow(Local_Moran_lep21inc))
+quadrant_lep [m_lepinc21>0 & m_local_lepinc21>0] <- 4
+quadrant_lep [m_lepinc21<0 & m_local_lepinc21<0] <- 1
+quadrant_lep [m_lepinc21<0 & m_local_lepinc21>0] <- 2
+quadrant_lep [m_lepinc21>0 & m_local_lepinc21<0] <- 3
+quadrant_lep [Local_Moran_lep21inc[,5]] <- 0
+brks <- c(0,1,2,3,4)
+colors <- c("white", "blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha = 0.4),"red")
+plot(inc_lep_kel22[,5],main = "2022", las = 1, border="lightgray",col=colors[findInterval(quadrant_lep,brks,all.inside = FALSE)])
+```
+
+```
+## Warning in plot.sf(inc_lep_kel22[, 5], main = "2022", las = 1, border =
+## "lightgray", : col is not of length 1 or nrow(x): colors will be recycled; use
+## pal to specify a color palette
+```
+
+```r
+legend("bottomright",legend = c("insignificant","low-low","low-high","high-low","high-high"),
+       fill=colors,bty="n")
+```
+
+![](autocorrelation_files/figure-html/unnamed-chunk-36-6.png)<!-- -->
+
+```r
 #LISA 2022leptospirosis incidence
 m_lepinc22 <- inc_lep_kel22$inc_1000 - mean(inc_lep_kel22$inc_1000) 
 m_local_lepinc22 <- Local_Moran_lep22inc[,1]- mean(Local_Moran_lep22inc[,1]) 
@@ -2596,7 +2789,8 @@ legend("bottomright",legend = c("insignificant","low-low","low-high","high-low",
        fill=colors,bty="n")
 ```
 
-![](autocorrelation_files/figure-html/unnamed-chunk-36-6.png)<!-- -->
+![](autocorrelation_files/figure-html/unnamed-chunk-36-7.png)<!-- -->
+
 
 # corelation between cases abd population density
 

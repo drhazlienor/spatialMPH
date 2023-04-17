@@ -2299,7 +2299,7 @@ LEPMADTest21 <- mad.test(loc_lep21.ppp2.km, fun = Kest, nsim = 99, verbose = FAL
 
 ```{r}
 #| cache = TRUE
-LEPMADTest22 <- mad.test(loc_lep21.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
+LEPMADTest22 <- mad.test(loc_lep22.ppp2.km, fun = Kest, nsim = 99, verbose = FALSE)
 ```
 
 ```{r}
