@@ -1,0 +1,726 @@
+---
+title: "Bivariate analysis of enteric fever and leptospirosis"
+author: "Hazlienor"
+date: "2023-04-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## prepare environment
+
+load package
+
+```{r}
+library(sf)
+library(tidyverse)
+library(here)
+library(janitor)
+library(gtsummary)
+library(DT)
+library(stringr)
+library(readxl)
+library(broom)
+library(tmap)
+library(mapview)
+library(lubridate)
+library(maptools)
+library(spatstat)
+library(spdep)
+library(gridExtra)
+library(grid)
+library(sparr)
+```
+
+
+## prepare data
+
+
+read polygon data
+
+```{r}
+kel <- st_read(here("Map",
+                    "kelantan.shp"))
+```
+
+
+read population data per mukim per year
+
+```{r}
+kel_mukim <- read_xlsx(here ("mukim.xlsx"))
+```
+
+
+merge population data to polygon
+
+```{r}
+kel_map <- merge(kel,kel_mukim,by.x="MUKIM", by.y="MUKIM", all.x=T, sort=F)
+dim(kel_map)
+class(kel_map)
+st_crs(kel_map)
+```
+
+
+load linelisting 
+
+```{r}
+linelist2 <- read_xlsx(here ("linelist.xlsx"))
+```
+
+
+merge population data to polygon
+
+```{r}
+kel_map <- merge(kel,kel_mukim,by.x="MUKIM", by.y="MUKIM", all.x=T, sort=F)
+dim(kel_map)
+class(kel_map)
+st_crs(kel_map)
+```
+
+
+list cases by year
+
+```{r}
+#extract enteric fever 2016-2022
+linelist2 <- read_xlsx(here ("linelist.xlsx"))
+listENT_kel <- filter(linelist2, Diagnosis=="Enteric_fever")  
+listENT_kel16 <- filter(listENT_kel, `Tahun Daftar` =="2016")
+listENT_kel17 <- filter(listENT_kel, `Tahun Daftar` =="2017")
+listENT_kel18 <- filter(listENT_kel, `Tahun Daftar` =="2018")
+listENT_kel19 <- filter(listENT_kel, `Tahun Daftar` =="2019")
+listENT_kel20 <- filter(listENT_kel, `Tahun Daftar` =="2020")
+listENT_kel21 <- filter(listENT_kel, `Tahun Daftar` =="2021")
+listENT_kel22 <- filter(listENT_kel, `Tahun Daftar` =="2022")
+
+#extract leptospirosis 2016-2022
+linelist2 <- read_xlsx(here ("linelist.xlsx"))
+listLEP_kel <- filter(linelist2, Diagnosis=="Leptospirosis")
+LEP_kel16 <- filter(listLEP_kel, `Tahun Daftar` =="2016")
+LEP_kel17 <- filter(listLEP_kel, `Tahun Daftar` =="2017")
+LEP_kel18 <- filter(listLEP_kel, `Tahun Daftar` =="2018")
+LEP_kel19 <- filter(listLEP_kel, `Tahun Daftar` =="2019")
+LEP_kel20 <- filter(listLEP_kel, `Tahun Daftar` =="2020")
+LEP_kel21 <- filter(listLEP_kel, `Tahun Daftar` =="2021")
+LEP_kel22 <- filter(listLEP_kel, `Tahun Daftar` =="2022")
+```
+
+
+count cases per mukim
+
+```{r}
+# join point to polygon
+polyENT_kel <- merge(kel_map, listENT_kel, by = c("MUKIM"))
+
+# count cumulative enteric fever per mukim
+count_ent <- polyENT_kel%>% 
+  count(Daerah, MUKIM, AVR) %>% 
+  ungroup
+combined_dataent <- st_join(kel_map, count_ent, by = "MUKIM")
+
+# count cumulative lep fever per mukim
+polyLEP_kel <- merge(kel_map, listLEP_kel, by = c("MUKIM"))
+count_lep <- polyLEP_kel%>% 
+  count(Daerah, MUKIM, AVR) %>% 
+  ungroup
+combined_datalep <- st_join(kel_map, count_lep, by = "MUKIM")
+```
+
+
+convert data to spatial format
+
+```{r}
+kel_map.sp <- as(kel_map, "Spatial")
+class(kel_map.sp)
+```
+
+
+transform to owin format
+
+```{r}
+kel_map.owin <- as(kel_map.sp, "owin")
+class(kel_map.owin)
+```
+
+
+mark data with diagnosis (factor)
+
+```{r}
+#| cache = TRUE
+# transform to sp
+loc_both <- st_as_sf(linelist2, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+loc_both <-st_transform(loc_both, 3168)
+loc_both.sp <- as(loc_both, "Spatial")
+
+# transform data sp to ppp - save categorical data as factor
+all_diag.ppp <- as(loc_both.sp, "ppp")
+marks(all_diag.ppp) <- as.factor(loc_both.sp$Diagnosis)
+Window(all_diag.ppp) <- kel_map.owin
+```
+
+```{r}
+#summary
+summary(all_diag.ppp)
+```
+
+
+plot split data
+
+```{r}
+#| cache = TRUE
+plot(split(all_diag.ppp))
+plot(density(split(all_diag.ppp)), ribbon = FALSE)
+```
+
+
+## correlation of cases and population (visual)
+
+plot by tmap 
+
+```{r}
+tmap_mode("plot")
+
+cases_mapent <- tm_shape(combined_dataent) + tm_polygons("n") + tm_layout(main.title="Enteric Fever Cases")
+pop_map <- tm_shape(kel_map) + tm_polygons("AVR") + tm_layout(main.title="Population")
+cases_maplep <- tm_shape(combined_datalep) + tm_polygons("n") + tm_layout(main.title="Leptospirosis Cases")
+
+tmap_arrange(cases_mapent, pop_map, cases_maplep,  ncol=3)   # arrange into 3x1 facets
+```
+
+
+plot by ggplot
+
+```{r name-of-chunk8, fig.width=16, fig.height=9}
+pop_map <- ggplot() +
+    geom_sf(data = kel_map, aes(fill = AVR), na.rm = FALSE) +
+    scale_fill_gradient(low = "white", high = "red", na.value = "grey") +
+  labs(fill = "Population") +
+  theme_void()
+
+ENT_map <- ggplot() +
+    geom_sf(data = combined_dataent, aes(fill = n), na.rm = FALSE) +
+    scale_fill_gradient(low = "white", high = "red", na.value = "grey") +
+  labs(fill = "Enteric Fever Cases") +
+  theme_void()
+
+LEP_map <- ggplot() +
+    geom_sf(data = combined_datalep, aes(fill = n), na.rm = FALSE) +
+    scale_fill_gradient(low = "white", high = "red", na.value = "grey") +
+  labs(fill = "Leptospirosis Cases") +
+  theme_void()
+
+```
+
+```{r name-of-chunk7, fig.width=16, fig.height=9}
+grid.arrange(ENT_map, pop_map, LEP_map, nrow=1, top=textGrob("Comparison of Enteric Fever and Leptospirosis Cases to Population in Kelantan 2016-2022", gp = gpar(fontsize = 20)))
+```
+
+
+# spatial relative risk (sparr package)
+
+cumulative cases
+
+```{r}
+#| cache = TRUE
+# split data
+diag_lep <- split(all_diag.ppp)$Leptospirosis
+diag_ent <- split(all_diag.ppp)$Enteric_fever
+
+# Compute a symmetric (pooled) adaptive relative risk estimate
+# with tolerance contours
+h0 <- OS(all_diag.ppp, nstar="geometric")
+diag_rr <- risk(diag_lep, diag_ent, h0=h0, adapt=TRUE, tolerate=TRUE,
+                hp=OS(all_diag.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+
+plot(diag_rr)
+```
+
+
+prepare file for spatial relative risk by year
+
+```{r}
+#| cache = TRUE
+# extract list contain both diagnosis by year
+list2016 <- linelist2 %>% 
+  filter(`Tahun Daftar` == "2016")
+list2017 <- linelist2 %>% 
+  filter(`Tahun Daftar` == "2017")
+list2018 <- linelist2 %>% 
+  filter(`Tahun Daftar` == "2018")
+list2019 <- linelist2 %>% 
+  filter(`Tahun Daftar` == "2019")
+list2020 <- linelist2 %>% 
+  filter(`Tahun Daftar` == "2020")
+list2021 <- linelist2 %>% 
+  filter(`Tahun Daftar` == "2021")
+list2022 <- linelist2 %>% 
+  filter(`Tahun Daftar` == "2022")
+
+# transform to sf
+list2016.sf <- st_as_sf(list2017, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+list2017.sf <- st_as_sf(list2017, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+list2018.sf <- st_as_sf(list2018, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+list2019.sf <- st_as_sf(list2019, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+list2020.sf <- st_as_sf(list2020, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+list2021.sf <- st_as_sf(list2021, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+list2022.sf <- st_as_sf(list2022, 
+                     coords = c("Longitude (WGS)", "Latitude (WGS)"), 
+                     crs = 4326)
+
+# transform to RSO
+loc_list2016.sf <-st_transform(list2016.sf, 3168)
+loc_list2017.sf <-st_transform(list2017.sf, 3168)
+loc_list2018.sf <-st_transform(list2018.sf, 3168)
+loc_list2019.sf <-st_transform(list2019.sf, 3168)
+loc_list2020.sf <-st_transform(list2020.sf, 3168)
+loc_list2021.sf <-st_transform(list2021.sf, 3168)
+loc_list2022.sf <-st_transform(list2022.sf, 3168)
+
+# transform to sp
+loc_list2016.sp <- as(loc_list2016.sf, "Spatial")
+loc_list2017.sp <- as(loc_list2017.sf, "Spatial")
+loc_list2018.sp <- as(loc_list2018.sf, "Spatial")
+loc_list2019.sp <- as(loc_list2019.sf, "Spatial")
+loc_list2020.sp <- as(loc_list2020.sf, "Spatial")
+loc_list2021.sp <- as(loc_list2021.sf, "Spatial")
+loc_list2022.sp <- as(loc_list2022.sf, "Spatial")
+
+# transform data sp to ppp 
+loc_list2016.ppp <- as(loc_list2016.sp, "ppp")
+loc_list2017.ppp <- as(loc_list2017.sp, "ppp")
+loc_list2018.ppp <- as(loc_list2018.sp, "ppp")
+loc_list2019.ppp <- as(loc_list2019.sp, "ppp")
+loc_list2020.ppp <- as(loc_list2020.sp, "ppp")
+loc_list2021.ppp <- as(loc_list2021.sp, "ppp")
+loc_list2022.ppp <- as(loc_list2022.sp, "ppp")
+
+# save categorical data as factor (marked data)
+marks(loc_list2016.ppp) <- as.factor(loc_list2016.sp$Diagnosis)
+marks(loc_list2017.ppp) <- as.factor(loc_list2017.sp$Diagnosis)
+marks(loc_list2018.ppp) <- as.factor(loc_list2018.sp$Diagnosis)
+marks(loc_list2019.ppp) <- as.factor(loc_list2019.sp$Diagnosis)
+marks(loc_list2020.ppp) <- as.factor(loc_list2020.sp$Diagnosis)
+marks(loc_list2021.ppp) <- as.factor(loc_list2021.sp$Diagnosis)
+marks(loc_list2022.ppp) <- as.factor(loc_list2022.sp$Diagnosis)
+
+# set window
+Window(loc_list2016.ppp) <- kel_map.owin
+Window(loc_list2017.ppp) <- kel_map.owin
+Window(loc_list2018.ppp) <- kel_map.owin
+Window(loc_list2019.ppp) <- kel_map.owin
+Window(loc_list2020.ppp) <- kel_map.owin
+Window(loc_list2021.ppp) <- kel_map.owin
+Window(loc_list2022.ppp) <- kel_map.owin
+```
+
+
+calculate spatial relative risk by year
+
+```{r}
+#| cache = TRUE
+# 2016
+# split into diagnosis
+diag_lep16 <- split(loc_list2016.ppp)$Leptospirosis
+diag_ent16 <- split(loc_list2016.ppp)$Enteric_fever
+
+# Compute a symmetric (pooled) adaptive relative risk estimate
+# with tolerance contours
+h0_16 <- OS(loc_list2016.ppp, nstar="geometric")
+diag_rr16 <- risk(diag_lep16, diag_ent16, h0=h0_16, adapt=TRUE, tolerate=TRUE,
+                hp=OS(loc_list2016.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+
+# 2017
+diag_lep17 <- split(loc_list2017.ppp)$Leptospirosis
+diag_ent17 <- split(loc_list2017.ppp)$Enteric_fever
+h0_17 <- OS(loc_list2017.ppp, nstar="geometric")
+diag_rr17 <- risk(diag_lep17, diag_ent17, h0=h0_17, adapt=TRUE, tolerate=TRUE,
+                hp=OS(loc_list2017.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+
+# 2018
+diag_lep18 <- split(loc_list2018.ppp)$Leptospirosis
+diag_ent18 <- split(loc_list2018.ppp)$Enteric_fever
+h0_18 <- OS(loc_list2018.ppp, nstar="geometric")
+diag_rr18 <- risk(diag_lep18, diag_ent18, h0=h0_18, adapt=TRUE, tolerate=TRUE,
+                hp=OS(loc_list2018.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+
+# 2019
+diag_lep19 <- split(loc_list2019.ppp)$Leptospirosis
+diag_ent19 <- split(loc_list2019.ppp)$Enteric_fever
+h0_19 <- OS(loc_list2019.ppp, nstar="geometric")
+diag_rr19 <- risk(diag_lep19, diag_ent19, h0=h0_19, adapt=TRUE, tolerate=TRUE,
+                hp=OS(loc_list2019.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+
+# 2020
+diag_lep20 <- split(loc_list2020.ppp)$Leptospirosis
+diag_ent20 <- split(loc_list2020.ppp)$Enteric_fever
+h0_20 <- OS(loc_list2020.ppp, nstar="geometric")
+diag_rr20 <- risk(diag_lep20, diag_ent20, h0=h0_20, adapt=TRUE, tolerate=TRUE,
+                hp=OS(loc_list2020.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+
+# 2021
+diag_lep21 <- split(loc_list2021.ppp)$Leptospirosis
+diag_ent21 <- split(loc_list2021.ppp)$Enteric_fever
+h0_21 <- OS(loc_list2021.ppp, nstar="geometric")
+diag_rr21 <- risk(diag_lep21, diag_ent21, h0=h0_21, adapt=TRUE, tolerate=TRUE,
+                hp=OS(loc_list2021.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+
+# 2022
+diag_lep22 <- split(loc_list2022.ppp)$Leptospirosis
+diag_ent22 <- split(loc_list2022.ppp)$Enteric_fever
+h0_22 <- OS(loc_list2022.ppp, nstar="geometric")
+diag_rr22 <- risk(diag_lep22, diag_ent22, h0=h0_22, adapt=TRUE, tolerate=TRUE,
+                hp=OS(loc_list2022.ppp)/2, pilot.symmetry="pooled", davies.baddeley=0.05)
+```
+
+
+plot spatial relative risk by year
+
+```{r name-of-chunk32, fig.width=15, fig.height=15}
+#| cache = TRUE
+par( mfrow= c(3,3) )
+plot(diag_rr16, main = "2016", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(diag_rr17, main = "2017", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(diag_rr18, main = "2018", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(diag_rr19, main = "2019", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(diag_rr20, main = "2020", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(diag_rr21, main = "2021", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(diag_rr22, main = "2022", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(diag_rr, main = "2016-2022", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+```
+
+
+# spatially-varying probability (spatstat)
+
+Estimates the spatially-varying probability of each type of point, using kernel smoothing
+- A value of 0 for a particular label suggests no occurrence of that label at that location, while a value of 1 suggests a definite occurrence.
+- the probability of the case to be leptospirosis case in that area as opposed to others, case = leptospirosis, control = enteric fever
+
+```{r name-of-chunk32a, fig.width=15, fig.height=15}
+# calculate risk
+relrisk_all <- relrisk.ppp(all_diag.ppp, casecontrol=TRUE, at="pixels")
+relrisk_16 <- relrisk.ppp(loc_list2016.ppp, casecontrol=TRUE, at="pixels")
+relrisk_17 <- relrisk.ppp(loc_list2017.ppp, casecontrol=TRUE, at="pixels")
+relrisk_18 <- relrisk.ppp(loc_list2018.ppp, casecontrol=TRUE, at="pixels")
+relrisk_19 <- relrisk.ppp(loc_list2019.ppp, casecontrol=TRUE, at="pixels")
+relrisk_20 <- relrisk.ppp(loc_list2020.ppp, casecontrol=TRUE, at="pixels")
+relrisk_21 <- relrisk.ppp(loc_list2021.ppp, casecontrol=TRUE, at="pixels")
+relrisk_22 <- relrisk.ppp(loc_list2022.ppp, casecontrol=TRUE, at="pixels")
+
+par(mfrow=c(3,3))
+plot(relrisk_16, main = "2016", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(relrisk_17, main = "2017", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(relrisk_18, main = "2018", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(relrisk_19, main = "2019", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(relrisk_20, main = "2020", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(relrisk_21, main = "2021", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(relrisk_22, main = "2022", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+plot(relrisk_all, main = "2016-2022", cex.main = 8, cex.lab = 6)
+box(lwd = 2)
+```
+
+# bivariate L function 
+
+calculate bivariate L function 
+
+```{r}
+#| cache = TRUE
+Lboth <- alltypes(all_diag.ppp, "L")
+```
+
+```{r}
+#| cache = TRUE
+Lboth16 <- alltypes(loc_list2016.ppp, "L")
+Lboth17 <- alltypes(loc_list2017.ppp, "L")
+Lboth18 <- alltypes(loc_list2018.ppp, "L")
+Lboth19 <- alltypes(loc_list2019.ppp, "L")
+Lboth20 <- alltypes(loc_list2020.ppp, "L")
+Lboth21 <- alltypes(loc_list2021.ppp, "L")
+Lboth22 <- alltypes(loc_list2022.ppp, "L")
+```
+
+
+plot bivariate L graph by year
+
+```{r name-of-chunk33, fig.width=20, fig.height=9}
+plot(Lboth16, main = "2016", cex.main = 3, cex.lab = 1.5)
+plot(Lboth17, main = "2017", cex.main = 3, cex.lab = 1.5)
+plot(Lboth18, main = "2018", cex.main = 3, cex.lab = 1.5)
+plot(Lboth19, main = "2019", cex.main = 3, cex.lab = 1.5)
+plot(Lboth20, main = "2020", cex.main = 3, cex.lab = 1.5)
+plot(Lboth21, main = "2021", cex.main = 3, cex.lab = 1.5)
+plot(Lboth22, main = "2022", cex.main = 3, cex.lab = 1.5)
+plot(Lboth, main = "2016-2022", cex.main = 3, cex.lab = 1.5)
+```
+
+
+```{r}
+#| cache = TRUE
+#plot estimates of the bivariate pair correlation functions
+Lbothest <- plot(alltypes(all_diag.ppp, pcfcross))
+```
+
+
+```{r}
+#| cache = TRUE
+# bivariate G-functions
+Gboth16 <- alltypes(loc_list2016.ppp, Gcross)
+Gboth17 <- alltypes(loc_list2017.ppp, Gcross)
+Gboth18 <- alltypes(loc_list2018.ppp, Gcross)
+Gboth19 <- alltypes(loc_list2019.ppp, Gcross)
+Gboth20 <- alltypes(loc_list2020.ppp, Gcross)
+Gboth21 <- alltypes(loc_list2021.ppp, Gcross)
+Gboth22 <- alltypes(loc_list2022.ppp, Gcross)
+Gboth <- alltypes(all_diag.ppp, Gcross)
+```
+
+
+```{r name-of-chunk, fig.width=20, fig.height=9}
+# plot bivariate G-functions
+plot(Gboth16)
+plot(Gboth17)
+plot(Gboth18)
+plot(Gboth19)
+plot(Gboth20)
+plot(Gboth21)
+plot(Gboth22)
+plot(Gboth)
+```
+
+
+# calculate Gdot function
+
+```{r}
+#| cache = TRUE
+Gdotall <- alltypes(all_diag.ppp, Gdot)
+Gdot16 <- alltypes(loc_list2016.ppp, Gdot)
+Gdot17 <- alltypes(loc_list2017.ppp, Gdot)
+Gdot18 <- alltypes(loc_list2018.ppp, Gdot)
+Gdot19 <- alltypes(loc_list2019.ppp, Gdot)
+Gdot20 <- alltypes(loc_list2020.ppp, Gdot)
+Gdot21 <- alltypes(loc_list2021.ppp, Gdot)
+Gdot22 <- alltypes(loc_list2022.ppp, Gdot)
+
+```
+
+
+# plot Gdot
+
+```{r}
+plot(Gdot16)
+plot(Gdot17)
+plot(Gdot18)
+plot(Gdot19)
+plot(Gdot20)
+plot(Gdot21)
+plot(Gdot22)
+plot(Gdotall)
+```
+
+
+# Ripley's K cross function
+
+calculate K cross
+
+```{r}
+#| cache = TRUE
+K16 <- Kcross(loc_list2016.ppp, "Leptospirosis", "Enteric_fever") 
+K17 <- Kcross(loc_list2017.ppp, "Leptospirosis", "Enteric_fever") 
+K18 <- Kcross(loc_list2018.ppp, "Leptospirosis", "Enteric_fever") 
+K19 <- Kcross(loc_list2019.ppp, "Leptospirosis", "Enteric_fever") 
+K20 <- Kcross(loc_list2020.ppp, "Leptospirosis", "Enteric_fever") 
+K21 <- Kcross(loc_list2021.ppp, "Leptospirosis", "Enteric_fever") 
+K22 <- Kcross(loc_list2022.ppp, "Leptospirosis", "Enteric_fever") 
+Kall <- Kcross(all_diag.ppp, "Leptospirosis", "Enteric_fever") 
+
+```
+
+
+plot Ripley's cross K function
+- Departures from the reference line indicate clustering of the two types of points relative to each other
+- When the observed K value is larger than the expected K value for a particular distance, the distribution is more clustered than a random distribution at that distance (scale of analysis). When the observed K value is smaller than the expected K value, the distribution is more dispersed than a random distribution at that distance
+
+```{r name-of-chunk34, fig.width=20, fig.height=9}
+par(mfrow=c(2,4))
+plot(K16, main = 2016, cex.main = 3, cex.lab = 1.5)
+plot(K17, main = 2017, cex.main = 3, cex.lab = 1.5)
+plot(K18, main = 2018, cex.main = 3, cex.lab = 1.5)
+plot(K19, main = 2019, cex.main = 3, cex.lab = 1.5)
+plot(K20, main = 2020, cex.main = 3, cex.lab = 1.5)
+plot(K21, main = 2021, cex.main = 3, cex.lab = 1.5)
+plot(K22, main = 2022, cex.main = 3, cex.lab = 1.5)
+plot(Kall, main = 2016-2022, cex.main = 3, cex.lab = 1.5)
+```
+
+# Kdot
+
+Calculate Kdot
+
+```{r}
+#| cache = TRUE
+Kdot16 <- Kdot(loc_list2016.ppp, "Leptospirosis")
+Kdot17 <- Kdot(loc_list2017.ppp, "Leptospirosis")
+Kdot18 <- Kdot(loc_list2018.ppp, "Leptospirosis")
+Kdot19 <- Kdot(loc_list2019.ppp, "Leptospirosis")
+Kdot20 <- Kdot(loc_list2020.ppp, "Leptospirosis")
+Kdot21 <- Kdot(loc_list2021.ppp, "Leptospirosis")
+Kdot22 <- Kdot(loc_list2022.ppp, "Leptospirosis")
+Kdotall <- Kdot(all_diag.ppp, "Leptospirosis")
+```
+
+
+Plot Kdot
+- Departures from the reference line indicate clustering or repulsion of the leptospirosis points relative to others
+
+```{r name-of-chunk35, fig.width=20, fig.height=9}
+par(mfrow=c(2,4))
+plot(Kdot16, main = "2016", cex.main = 3, cex.lab = 1.5)
+plot(Kdot17, main = "2017", cex.main = 3, cex.lab = 1.5)
+plot(Kdot18, main = "2018", cex.main = 3, cex.lab = 1.5)
+plot(Kdot19, main = "2019", cex.main = 3, cex.lab = 1.5)
+plot(Kdot20, main = "2020", cex.main = 3, cex.lab = 1.5)
+plot(Kdot21, main = "2021", cex.main = 3, cex.lab = 1.5)
+plot(Kdot22, main = "2022", cex.main = 3, cex.lab = 1.5)
+plot(Kdotall, main = "2016-2022", cex.main = 3, cex.lab = 1.5)
+```
+
+
+# Pair correlation function
+
+pcf for K cross
+
+```{r}
+#| cache = TRUE
+K16pcf<- pcf(K16, spar=1, method="b")
+K17pcf<- pcf(K17, spar=1, method="b")
+K18pcf<- pcf(K18, spar=1, method="b")
+K19pcf<- pcf(K19, spar=1, method="b")
+K20pcf<- pcf(K20, spar=1, method="b")
+K21pcf<- pcf(K21, spar=1, method="b")
+K22pcf<- pcf(K22, spar=1, method="b")
+Kallpcf<- pcf(Kall, spar=1, method="b")
+```
+
+
+
+Plot pcf for K cross
+
+```{r name-of-chunk36, fig.width=20, fig.height=9}
+par(mfrow=c(2,4))
+plot(K16pcf, main = "2016", cex.main = 3, cex.lab = 1.5)
+plot(K17pcf, main = "2017", cex.main = 3, cex.lab = 1.5)
+plot(K18pcf, main = "2018", cex.main = 3, cex.lab = 1.5)
+plot(K19pcf, main = "2019", cex.main = 3, cex.lab = 1.5)
+plot(K20pcf, main = "2020", cex.main = 3, cex.lab = 1.5)
+plot(K21pcf, main = "2021", cex.main = 3, cex.lab = 1.5)
+plot(K22pcf, main = "2022", cex.main = 3, cex.lab = 1.5)
+plot(Kallpcf, main = "2016-2022", cex.main = 3, cex.lab = 1.5)
+```
+
+```{r}
+#| cache = TRUE
+# pcf cross
+cross16pcf <- pcfcross(loc_list2016.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+cross17pcf <- pcfcross(loc_list2017.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+cross18pcf <- pcfcross(loc_list2018.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+cross19pcf <- pcfcross(loc_list2019.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+cross20pcf <- pcfcross(loc_list2020.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+cross21pcf <- pcfcross(loc_list2021.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+cross22pcf <- pcfcross(loc_list2022.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+crosspcf <- pcfcross(all_diag.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+```
+
+```{r}
+crosspcf <- pcfcross(all_diag.ppp, "Leptospirosis", "Enteric_fever", stoyan=0.1)
+```
+
+
+plot cross pcf
+- A value g(r) < 1 indicates that interpoint distances equal to r are less frequent than would be expected for a completely random process, so this suggests regularity. A value g(r) > 1 indicates that this interpoint distance is more frequent than expected for a completely random pattern, which suggests clustering.
+
+- If the value of gr,d obs(r) is larger than the value of the gr,d high(r), then leptospirosis and enteric fever suggest a positive relationship. If the value of gr,d obs(r) is smaller than the value of the gr,d low(r), then the leptospirosis and enteric fever suggest a negative relationship. In the grey zone, we cannot reject the null hypothesis of independency of components. The variable “r” refers to distance from leptospirosis to enteric fever.
+
+```{r name-of-chunk37, fig.width=20, fig.height=9}
+#| cache = TRUE
+par(mfrow=c(2,4))
+plot(cross16pcf, main = "2016", cex.main = 3, cex.lab = 1.5)
+plot(cross17pcf, main = "2017", cex.main = 3, cex.lab = 1.5)
+plot(cross18pcf, main = "2018", cex.main = 3, cex.lab = 1.5)
+plot(cross19pcf, main = "2019", cex.main = 3, cex.lab = 1.5)
+plot(cross20pcf, main = "2020", cex.main = 3, cex.lab = 1.5)
+plot(cross21pcf, main = "2021", cex.main = 3, cex.lab = 1.5)
+plot(cross22pcf, main = "2022", cex.main = 3, cex.lab = 1.5)
+plot(crosspcf, main = "2016-2022", cex.main = 3, cex.lab = 1.5)
+```
+
+
+enveloped ripley cross K
+- When the observed K value is larger than the upper confidence envelope (HiConfEnv) value, spatial clustering for that distance is statistically significant. When the observed K value is smaller than the lower confidence envelope (LwConfEnv) value, spatial dispersion for that distance is statistically significant.
+
+```{r}
+#| cache = TRUE
+env_K01 <- plot(envelope(all_diag.ppp, Kcross, nsim = 99))
+```
+
+```{r}
+#| cache = TRUE
+env_K16 <- envelope(loc_list2016.ppp, Kcross, nsim = 99)
+```
+
+```{r}
+#| cache = TRUE
+env_K17 <- envelope(loc_list2017.ppp, Kcross, nsim = 99)
+env_K18 <- envelope(loc_list2018.ppp, Kcross, nsim = 99)
+env_K19 <- envelope(loc_list2019.ppp, Kcross, nsim = 99)
+env_K20 <- envelope(loc_list2020.ppp, Kcross, nsim = 99)
+env_K21 <- envelope(loc_list2021.ppp, Kcross, nsim = 99)
+env_K22 <- envelope(loc_list2022.ppp, Kcross, nsim = 99)
+
+```
+
+
+Plot enveloped Ripley's (cross) K by year
+
+```{r name-of-chunk38, fig.width=20, fig.height=9}
+par(mfrow=c(2,4))
+plot(env_K16, main = "2016", cex.main = 3)
+plot(env_K17, main = "2017", cex.main = 3)
+plot(env_K18, main = "2018", cex.main = 3)
+plot(env_K19, main = "2019", cex.main = 3)
+plot(env_K20, main = "2020", cex.main = 3)
+plot(env_K21, main = "2021", cex.main = 3)
+plot(env_K22, main = "2022", cex.main = 3)
+```
+
+
+
